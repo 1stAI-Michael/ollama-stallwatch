@@ -190,6 +190,54 @@ services:
           cpus: "1"
           memory: 256M
 
+  ollama-logproxy:
+    logging: *logdefaults
+    # fA-338 ②: schreibt mit, WELCHER Agent wie viel Maschinenzeit kostet.
+    # Ollama loggt keine Header — gemessen mit eigenem Header, User-Agent und dem
+    # OpenAI-user-Feld gleichzeitig, null Treffer im gesamten Server-Log. Aus den
+    # Server-Logs ist "welcher Agent kostet wie viel" deshalb nicht ableitbar.
+    #
+    # ADDITIV, und das ist der ganze Punkt: der klinische Pfad spricht weiter
+    # direkt 11434 und merkt von diesem Container nichts. Nur wer zugeordnet
+    # werden will, spricht 11435 und schickt X-Agent: agent:<agent_id>:<task>.
+    # Faellt der Proxy aus, faellt nur die Buchhaltung aus, nicht die Inferenz.
+    #
+    # Gleiches Muster wie rerank-adapter: python:slim + stdlib, kein eigener Build.
+    image: python:3.12-slim
+    container_name: ollama-logproxy
+    restart: unless-stopped
+    networks: [openllm-net]
+    depends_on:
+      - ollama
+
+    # Nur EINE Zeile, anders als bei ollama: BIND_IP und BIND_IP_WLAN stehen hier
+    # beide auf 0.0.0.0, eine zweite identische Bindung waere doppelt.
+    ports:
+      - "${BIND_IP}:11435:80"
+
+    volumes:
+      - ./ollama-logproxy:/app:ro
+      # Schreibend: der Proxy fuehrt eine EIGENE Tabelle (proxy_requests) in der
+      # Monitoring-DB. Der bestehende Collector schreibt daneben unveraendert
+      # weiter, ein Rueckbau ist ein DROP TABLE. DB und Sammler gehoeren root,
+      # der Container laeuft als root — die WAL-Dateien bleiben damit lesbar
+      # fuer beide Seiten.
+      - ${DATA_ROOT}/monitoring:/monitoring
+
+    environment:
+      OLLAMA_URL: "http://ollama:11434"
+      DB_PATH: "/monitoring/monitor.db"
+      AGENT_HEADER: "X-Agent"
+      PORT: "80"
+
+    command: ["python3", "/app/proxy.py"]
+
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 256M
+
   openwebui:
     logging: *logdefaults
     # Pinned image version (not :latest) for controlled updates.

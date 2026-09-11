@@ -19,6 +19,15 @@ Nebeneffekt, der den Log-Parser schlaegt: der Proxy sieht die **Antwort** und
 liest Modell und Prompt-Token direkt daraus, statt sie aus Log-Zeilen zu
 korrelieren. Keine Zuordnungs-Races, keine Heuristik.
 
+Streams werden Stueck fuer Stueck durchgereicht, nicht gesammelt. Die erste
+Fassung las `r.read()` — die ganze Antwort — und schickte sie erst danach los.
+Fuer `stream: true` (Normalfall bei /api/chat) macht das aus time-to-first-token
+ein time-to-last-token: der Aufrufer sieht minutenlang nichts und dann alles auf
+einmal. Funktional faellt das nicht auf, die Antwort ist ja vollstaendig; es
+zerstoert nur genau die Eigenschaft, wegen der man streamt. Fuer die Buchhaltung
+reicht das ENDE der Antwort, deshalb laeuft nur ein kleiner Mitschnitt der
+letzten Bytes mit (TAIL) statt der ganzen Antwort.
+
 Env:
     OLLAMA_URL   Upstream (default http://ollama:11434)
     PORT         Listen-Port (default 80; im Compose auf 11435 veroeffentlicht)
@@ -43,6 +52,12 @@ OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://ollama:11434").rstrip("/")
 PORT = int(os.environ.get("PORT", "80"))
 DB_PATH = os.environ.get("DB_PATH", "/monitoring/monitor.db")
 AGENT_HEADER = os.environ.get("AGENT_HEADER", "X-Agent")
+
+# Mitschnitt-Fenster fuer die Token-Zaehlung. Die Schluss-Zeile von Ollama
+# (prompt_eval_count/eval_count) ist ein paar hundert Byte gross; 64 KiB traegt
+# sie auch dann, wenn ein Stueck mitten in einer Zeile endet. Der Anfang des
+# Fensters darf eine halbe Zeile sein — `zaehle` verwirft, was nicht parst.
+TAIL = 65536
 
 # Eigene Tabelle statt einer Spalte in ollama_requests: der bestehende Collector
 # schreibt dort weiter unveraendert, und ein Rollback ist ein DROP TABLE.
@@ -131,14 +146,33 @@ class Handler(BaseHTTPRequestHandler):
         try:
             with urllib.request.urlopen(req, timeout=3600) as r:
                 status = r.status
-                antwort = r.read()
+                oben_laenge = r.headers.get("Content-Length")
                 self.send_response(status)
                 for k, v in r.headers.items():
                     if k.lower() not in ("transfer-encoding", "content-length", "connection"):
                         self.send_header(k, v)
-                self.send_header("Content-Length", str(len(antwort)))
-                self.end_headers()
-                self.wfile.write(antwort)
+                if oben_laenge is not None:
+                    # Feste Laenge: es gibt nichts zu streamen, Ollama hat die
+                    # Antwort ohnehin schon fertig.
+                    antwort = r.read()
+                    self.send_header("Content-Length", str(len(antwort)))
+                    self.end_headers()
+                    self.wfile.write(antwort)
+                else:
+                    # Kein Content-Length = Stream. read1() gibt zurueck, was DA
+                    # ist, statt auf die volle Puffergroesse zu warten — read()
+                    # wuerde hier wieder sammeln und den Stream einebnen.
+                    self.send_header("Transfer-Encoding", "chunked")
+                    self.end_headers()
+                    while True:
+                        stueck = r.read1(65536)
+                        if not stueck:
+                            break
+                        self.wfile.write(b"%x\r\n" % len(stueck) + stueck + b"\r\n")
+                        self.wfile.flush()
+                        antwort = (antwort + stueck)[-TAIL:]
+                    self.wfile.write(b"0\r\n\r\n")
+                    self.wfile.flush()
         except urllib.error.HTTPError as e:
             status = e.code
             antwort = e.read()

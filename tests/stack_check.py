@@ -60,7 +60,8 @@ MONITORING = REPO / "monitoring"
 
 # ti-30-Vorgaben. Sie gelten nur, solange config.toml nichts anderes sagt.
 STANDARD = {
-    "container": ["ollama", "openwebui", "tei-embed", "tei-rerank", "rerank-adapter"],
+    "container": ["ollama", "openwebui", "tei-embed", "tei-rerank", "rerank-adapter",
+                  "ollama-logproxy"],
     "dienste": ["ollama-gpu-logger", "ollama-log-parser", "ollama-process-logger",
                 "ollama-stall-detector", "ollama-dashboard"],
     # Modelle, die den Betrieb tragen. Klinisch = das Modell, dessen Antworten
@@ -114,6 +115,7 @@ DB = _pfad(CFG.get("db_path", "monitor.db"))
 COMPOSE = _pfad(CFG.get("ollama", {}).get("compose_file", "../docker-compose.yml"))
 OLLAMA_CONTAINER = CFG.get("ollama", {}).get("container_name", "ollama")
 OLLAMA = SC.get("ollama_url", "http://127.0.0.1:11434")
+LOGPROXY = SC.get("logproxy_url", "http://127.0.0.1:11435")
 DASHBOARD = f"http://127.0.0.1:{CFG.get('api', {}).get('port', 3002)}"
 
 CONTAINER = SC.get("container", STANDARD["container"])
@@ -331,6 +333,68 @@ def check_ollama(schnell: bool) -> None:
     pruefe("Antwortzeit unter 30 s (sonst Kaltstart)", False, w < 30, f"{w:.1f}s")
 
 
+# ------------------------------------------------------------- Logging-Proxy
+def check_logproxy() -> None:
+    """Der Proxy (fA-338 ②) ist additiv — faellt er aus, laeuft die Inferenz
+    weiter und nur die Zuordnung hoert auf. Genau deshalb gehoert er geprueft:
+    ein Ausfall sieht von aussen aus wie Normalbetrieb, und die Luecke faellt
+    erst auf, wenn jemand Monate spaeter fragt, wer die Maschinenzeit verbraucht
+    hat (vgl. den Retention-Cron, der 146 Tage lang nicht lief).
+
+    Zwei Stufen, weil „Port antwortet" zu wenig beweist:
+
+      1. antwortet 11435 dasselbe wie 11434? -> es ist wirklich ein Proxy und
+         nicht irgendein Dienst, der zufaellig auf dem Port sitzt
+      2. entsteht dabei eine Zeile in proxy_requests? -> die Buchhaltung
+         schreibt tatsaechlich, nicht nur der Datenpfad laeuft
+
+    Beides ohne Modell-Ladung, also auch unter --schnell fahrbar.
+    """
+    print("\nLogging-Proxy (Agenten-Zuordnung)")
+    try:
+        oben = hole(OLLAMA + "/api/version", timeout=5)
+    except Exception as e:  # noqa: BLE001
+        pruefe("Proxy vergleichbar mit Direktweg", False, False,
+               f"Direktweg antwortet nicht: {type(e).__name__}")
+        return
+
+    try:
+        with sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=10) as c:
+            vorher = c.execute("SELECT COUNT(*) FROM proxy_requests").fetchone()[0]
+    except sqlite3.Error as e:
+        vorher = None
+        pruefe("Tabelle proxy_requests vorhanden", False, False, str(e))
+
+    try:
+        unten = hole(LOGPROXY + "/api/version", timeout=5)
+    except Exception as e:  # noqa: BLE001
+        pruefe("Proxy erreichbar", True, False, f"{LOGPROXY}: {type(e).__name__}: {e}")
+        return
+    pruefe("Proxy reicht durch", True, unten == oben,
+           f"11435 {unten.get('version')!r} == 11434 {oben.get('version')!r}")
+
+    if vorher is None:
+        return
+    # Der Proxy schreibt die Zeile ERST, nachdem er die Antwort rausgeschickt
+    # hat (Buchhaltung darf den Datenpfad nicht aufhalten). Wer direkt nach dem
+    # Request zaehlt, liest deshalb zu frueh und bekommt einen Warnhinweis, der
+    # nichts bedeutet. Kurz nachfassen statt einmal raten.
+    nachher = vorher
+    for _ in range(20):
+        try:
+            with sqlite3.connect(f"file:{DB}?mode=ro", uri=True, timeout=10) as c:
+                nachher = c.execute("SELECT COUNT(*) FROM proxy_requests").fetchone()[0]
+        except sqlite3.Error as e:
+            pruefe("Proxy schreibt mit", False, False, str(e))
+            return
+        if nachher > vorher:
+            break
+        time.sleep(0.1)
+    # Weich: ein verlorener Zaehler kostet Buchhaltung, nicht Betrieb.
+    pruefe("Proxy schreibt mit", False, nachher > vorher,
+           f"proxy_requests {vorher} -> {nachher}")
+
+
 # ----------------------------------------------------------------- Monitoring
 def check_monitoring() -> None:
     print("\nMonitoring")
@@ -464,6 +528,7 @@ def main() -> int:
     check_konfig()
     check_log_deckel()
     check_ollama(a.schnell)
+    check_logproxy()
     check_monitoring()
     check_aufraeumen()
     check_platte()
