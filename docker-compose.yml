@@ -94,7 +94,15 @@ services:
     # CPU-only Text-Embeddings-Inference (bge-m3) as failover for the GX-10 :8001 endpoint.
     # Same host port 8001 as GX-10 for drop-in compatibility — Coordinator registers TI-30 as backup rank.
     # CPU-only bge-m3-Embedding als Backup fuer GX-10 :8001. Gleicher Host-Port fuer Drop-in-Kompatibilitaet.
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest
+    # fA-652 (Michael, 11.09.2026): festgenagelt auf den Stand, der HIER LAEUFT —
+    # TEI 1.9.3, sha-f9a0643, gebaut 2026-06-22. Auf den DIGEST, nicht auf einen
+    # Versions-Tag: am 11.09. gemessen trugen `cpu-latest` (e65aa131) UND
+    # `cpu-1.9.3` (c26a2262) bereits andere Bits als das laufende Abbild. Ein
+    # blosses Neuanlegen haette die Embedding-Engine also still ausgetauscht —
+    # und Embeddings sind Ergebnis (Tabu ERGEBNIS): das scheitert nicht, es
+    # liefert andere Zahlen. Ein Wechsel gehoert gemessen, nicht mitgenommen:
+    # vorher/nachher `python3 tests/tei_acceptance.py` gegen GX-10.
+    image: ghcr.io/huggingface/text-embeddings-inference@sha256:7f8cbd5fbf27d1ad82450b68ec37e542bbfb0d03e6dc79d6d00242022f2fc4c7
     container_name: tei-embed
     restart: unless-stopped
     networks: [openllm-net]
@@ -129,7 +137,15 @@ services:
     # CPU-only reranker (bge-reranker-v2-m3). Internal-only — the rerank-adapter service in front of this
     # exposes the GX-10-compatible /v1/rerank shape on host port 8082. TEI raw_scores per-request.
     # CPU-only Reranker — nur intern erreichbar; der rerank-adapter davor spricht das GX-10-Format.
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest
+    # fA-652 (Michael, 11.09.2026): festgenagelt auf den Stand, der HIER LAEUFT —
+    # TEI 1.9.3, sha-f9a0643, gebaut 2026-06-22. Auf den DIGEST, nicht auf einen
+    # Versions-Tag: am 11.09. gemessen trugen `cpu-latest` (e65aa131) UND
+    # `cpu-1.9.3` (c26a2262) bereits andere Bits als das laufende Abbild. Ein
+    # blosses Neuanlegen haette die Embedding-Engine also still ausgetauscht —
+    # und Embeddings sind Ergebnis (Tabu ERGEBNIS): das scheitert nicht, es
+    # liefert andere Zahlen. Ein Wechsel gehoert gemessen, nicht mitgenommen:
+    # vorher/nachher `python3 tests/tei_acceptance.py` gegen GX-10.
+    image: ghcr.io/huggingface/text-embeddings-inference@sha256:7f8cbd5fbf27d1ad82450b68ec37e542bbfb0d03e6dc79d6d00242022f2fc4c7
     container_name: tei-rerank
     restart: unless-stopped
     networks: [openllm-net]
