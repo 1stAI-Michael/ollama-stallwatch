@@ -14,39 +14,49 @@ This is a Docker-based deployment of **Open WebUI** (v0.6.43) with **Ollama** (v
 
 ## Who listens where
 
-Read this first when something is "suddenly unreachable". Two services deliberately do **not**
-answer on the practice LAN any more (fA-850, 2026-09-13) — a refused connection from a LAN host
-is the intended behaviour there, not a fault. Measured 2026-09-13; re-measure with
+Read this first when something is "suddenly unreachable". **Exactly one** service deliberately
+does not answer on the practice LAN: the monitoring dashboard. A refused connection to `:3002`
+from a LAN host is intended behaviour, not a fault. Measured 2026-09-13; re-measure with
 `sudo ss -tlnp` rather than trusting this table.
 
 | Port | Service | Bound to | LAN? | Set in |
 |---|---|---|---|---|
 | 11434 | ollama | `0.0.0.0` | yes | `BIND_IP` in `.env` |
-| 11435 | ollama-logproxy | `127.0.0.1` + tailnet | **no** | `BIND_IP_TAILNET` in `.env` |
+| 11435 | ollama-logproxy | `0.0.0.0` | yes | `BIND_IP` in `.env` |
 | 3002 | monitoring dashboard/API | tailnet only | **no** | `[api] host` in `monitoring/config.toml` |
 | 3000 | openwebui | `0.0.0.0` | yes | `BIND_IP` + `OPENWEBUI_PORT` in `.env` |
 | 8001 | tei-embed | `0.0.0.0` | yes | `BIND_IP` in `.env` |
 | 8082 | rerank-adapter | `0.0.0.0` | yes | `BIND_IP` in `.env` |
 | — | tei-rerank | container network only | no | reached through rerank-adapter |
 
+**Where the line runs** (fA-850, Michael 2026-09-13) — the practice LAN counts as trusted, so
+services are not hidden from it merely for looking exposed. What is kept off it is **disclosure,
+not capability**:
+
+- `:3002` publishes data that exists nowhere else on the network — model names, client
+  addresses, a timeline — with no authentication. Closing it removes real read access, and
+  nothing in the LAN ever consumed it.
+- `:11435` was briefly moved off the LAN on the same day and moved back. It only proxies to
+  `:11434`, which stays open and carries LAN load (ti-10, CT117). Closing the proxy prevented
+  no capability whatsoever; it only looked like a security gain. Either the LAN is trusted —
+  then this port may sit there too — or it is not, and then `:11434` is the piece of work,
+  not this one.
+
+Applying that rule to something new: ask whether it lets someone **read** something the network
+does not otherwise expose. If yes, keep it on the tailnet. If it only re-exposes what `:11434`
+already offers, leave it with the others and do not pretend otherwise.
+
 **Symptom → cause:**
 
-- *Connection refused on `192.168.7.130:11435` or `:3002`* — intended. Use the tailnet address
-  (`100.121.5.76`). Neither has any authentication, which is why they are off the LAN.
+- *Connection refused on `192.168.7.130:3002`* — intended. Use the tailnet address
+  (`100.121.5.76`).
 - *`127.0.0.1:3002` refused* — also intended: `ThreadingHTTPServer` binds exactly **one**
-  address, and that address is now the tailnet one. `tests/stack_check.py` follows
-  `[api] host` instead of assuming localhost, so the check stays honest.
-- *The whole stack refuses to start, complaining about `BIND_IP_TAILNET`* — the variable is
-  missing from `.env`. That is on purpose: an empty default would silently bind `0.0.0.0`
-  again and quietly undo the change. Put the tailnet address back.
+  address, and that address is the tailnet one. `tests/stack_check.py` follows `[api] host`
+  instead of assuming localhost, so the check does not report a healthy service as dead.
 
-**To undo** (both are one line, no rebuild):
+**To undo** (one line, no rebuild):
 
 ```bash
-# proxy back onto the LAN: docker-compose.yml, service ollama-logproxy
-#   "127.0.0.1:11435:80"  ->  "${BIND_IP}:11435:80"
-docker compose up -d --no-deps --force-recreate ollama-logproxy
-
 # dashboard back onto the LAN: monitoring/config.toml -> [api] host = "0.0.0.0"
 sudo systemctl restart ollama-dashboard
 ```

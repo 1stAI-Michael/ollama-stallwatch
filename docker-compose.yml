@@ -226,23 +226,24 @@ services:
     depends_on:
       - ollama
 
-    # fA-850 (Michael, 13.09.2026): NICHT an BIND_IP haengen. Der naechtliche
-    # Port-Bestand von ti-nas-07 fand 11435 am 11.09. als neuen offenen Port im
-    # Praxis-LAN. Er kann nichts, was 11434 nicht auch koennte — beide ohne
-    # Anmeldung —, aber er ist ein zweiter Eingang, und das LAN braucht ihn nicht:
-    # die Agenten kommen ueber das Tailnet. Umgestellt, solange ihn noch niemand
-    # benutzte; spaeter waere es ein Umbau gewesen.
+    # fA-850: wie 11434, also am LAN. Das war am 13.09.2026 zwei Stunden lang
+    # anders — der Port hing kurz nur am Tailnet — und Michael hat es am selben
+    # Abend zurueckgenommen. Die Begruendung gehoert hierher, damit niemand die
+    # Runde ein zweites Mal dreht:
     #
-    #   127.0.0.1  fuer tests/stack_check.py und Messungen auf der Maschine
-    #   Tailnet    fuer die Agenten der Flotte
-    #   LAN        bewusst NICHT
+    # Der Proxy reicht nach 11434 durch, und 11434 steht im LAN offen und traegt
+    # dort Last (ti-10, CT117). Wer im Praxisnetz Ollama benutzen will, nimmt
+    # also ohnehin 11434. 11435 zu schliessen verhindert KEINE Faehigkeit; es
+    # sieht nur nach Sicherheitsgewinn aus. Entweder gilt das LAN als
+    # vertrauenswuerdig — dann darf auch dieser Port dort stehen —, oder es gilt
+    # das nicht, dann ist 11434 der Vorgang und nicht dieser hier. Michaels
+    # Entscheid: das LAN gilt als vertrauenswuerdig.
     #
-    # `:?` statt Default: fehlt BIND_IP_TAILNET, bleibt der Stack stehen und sagt
-    # es. Ein leerer Wert wuerde sonst still wieder auf 0.0.0.0 binden — also
-    # genau den Zustand herstellen, den diese Zeile beseitigen soll.
+    # Das Monitoring-Dashboard (3002) bleibt trotzdem drausssen, und das ist kein
+    # Widerspruch: es gibt DATEN preis (Modellnamen, Client-Adressen, Zeitverlauf),
+    # keine Faehigkeit. Die Trennlinie ist Mitlesen, nicht Zugriff.
     ports:
-      - "127.0.0.1:11435:80"
-      - "${BIND_IP_TAILNET:?BIND_IP_TAILNET fehlt in .env — der Logging-Proxy wuerde sonst wieder im LAN lauschen (fA-850)}:11435:80"
+      - "${BIND_IP}:11435:80"
 
     volumes:
       - ./ollama-logproxy:/app:ro
