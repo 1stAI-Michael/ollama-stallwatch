@@ -226,10 +226,23 @@ services:
     depends_on:
       - ollama
 
-    # Nur EINE Zeile, anders als bei ollama: BIND_IP und BIND_IP_WLAN stehen hier
-    # beide auf 0.0.0.0, eine zweite identische Bindung waere doppelt.
+    # fA-850 (Michael, 13.09.2026): NICHT an BIND_IP haengen. Der naechtliche
+    # Port-Bestand von ti-nas-07 fand 11435 am 11.09. als neuen offenen Port im
+    # Praxis-LAN. Er kann nichts, was 11434 nicht auch koennte — beide ohne
+    # Anmeldung —, aber er ist ein zweiter Eingang, und das LAN braucht ihn nicht:
+    # die Agenten kommen ueber das Tailnet. Umgestellt, solange ihn noch niemand
+    # benutzte; spaeter waere es ein Umbau gewesen.
+    #
+    #   127.0.0.1  fuer tests/stack_check.py und Messungen auf der Maschine
+    #   Tailnet    fuer die Agenten der Flotte
+    #   LAN        bewusst NICHT
+    #
+    # `:?` statt Default: fehlt BIND_IP_TAILNET, bleibt der Stack stehen und sagt
+    # es. Ein leerer Wert wuerde sonst still wieder auf 0.0.0.0 binden — also
+    # genau den Zustand herstellen, den diese Zeile beseitigen soll.
     ports:
-      - "${BIND_IP}:11435:80"
+      - "127.0.0.1:11435:80"
+      - "${BIND_IP_TAILNET:?BIND_IP_TAILNET fehlt in .env — der Logging-Proxy wuerde sonst wieder im LAN lauschen (fA-850)}:11435:80"
 
     volumes:
       - ./ollama-logproxy:/app:ro
