@@ -18,6 +18,13 @@ container_name = "ollama"
 compose_file = "../docker-compose.yml"
 
 [api]
+# Bind address of the dashboard/REST API. On ti-30 this is the TAILNET address,
+# not 0.0.0.0 (fA-850): the dashboard has no authentication, and while it shows
+# no request contents it does show model names, client addresses and a timeline.
+# ThreadingHTTPServer binds exactly ONE address, so setting a concrete address
+# means localhost stops answering too — tests/stack_check.py follows this value
+# instead of assuming 127.0.0.1. Use "0.0.0.0" only where the host has no
+# untrusted network.
 host = "0.0.0.0"
 port = 3002
 

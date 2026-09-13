@@ -116,7 +116,15 @@ COMPOSE = _pfad(CFG.get("ollama", {}).get("compose_file", "../docker-compose.yml
 OLLAMA_CONTAINER = CFG.get("ollama", {}).get("container_name", "ollama")
 OLLAMA = SC.get("ollama_url", "http://127.0.0.1:11434")
 LOGPROXY = SC.get("logproxy_url", "http://127.0.0.1:11435")
-DASHBOARD = f"http://127.0.0.1:{CFG.get('api', {}).get('port', 3002)}"
+# Dem konfigurierten Bind folgen statt 127.0.0.1 anzunehmen (fA-850). Seit das
+# Dashboard ans Tailnet gebunden ist, antwortet localhost nicht mehr — eine
+# Pruefung, die weiter dorthin fragt, meldet einen gesunden Dienst als tot und
+# schickt jemanden auf die falsche Suche. `0.0.0.0` ist keine Zieladresse: dort
+# lauscht es ueberall, und localhost ist dann der kuerzeste Weg hin.
+_API_HOST = CFG.get("api", {}).get("host", "127.0.0.1")
+if _API_HOST in ("0.0.0.0", "::", ""):
+    _API_HOST = "127.0.0.1"
+DASHBOARD = f"http://{_API_HOST}:{CFG.get('api', {}).get('port', 3002)}"
 
 CONTAINER = SC.get("container", STANDARD["container"])
 # Optionale Wahl-Sets je Betriebsmodus; ohne den Block ändert sich nichts.

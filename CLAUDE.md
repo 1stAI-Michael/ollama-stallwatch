@@ -12,6 +12,45 @@ This is a Docker-based deployment of **Open WebUI** (v0.6.43) with **Ollama** (v
 - **rerank-adapter**: Translates OpenAI `/v1/rerank` to TEI `/rerank` so the coordinator sees one format
 - **Networking**: All containers communicate over a custom Docker bridge network (`openllm-net`)
 
+## Who listens where
+
+Read this first when something is "suddenly unreachable". Two services deliberately do **not**
+answer on the practice LAN any more (fA-850, 2026-09-13) — a refused connection from a LAN host
+is the intended behaviour there, not a fault. Measured 2026-09-13; re-measure with
+`sudo ss -tlnp` rather than trusting this table.
+
+| Port | Service | Bound to | LAN? | Set in |
+|---|---|---|---|---|
+| 11434 | ollama | `0.0.0.0` | yes | `BIND_IP` in `.env` |
+| 11435 | ollama-logproxy | `127.0.0.1` + tailnet | **no** | `BIND_IP_TAILNET` in `.env` |
+| 3002 | monitoring dashboard/API | tailnet only | **no** | `[api] host` in `monitoring/config.toml` |
+| 3000 | openwebui | `0.0.0.0` | yes | `BIND_IP` + `OPENWEBUI_PORT` in `.env` |
+| 8001 | tei-embed | `0.0.0.0` | yes | `BIND_IP` in `.env` |
+| 8082 | rerank-adapter | `0.0.0.0` | yes | `BIND_IP` in `.env` |
+| — | tei-rerank | container network only | no | reached through rerank-adapter |
+
+**Symptom → cause:**
+
+- *Connection refused on `192.168.7.130:11435` or `:3002`* — intended. Use the tailnet address
+  (`100.121.5.76`). Neither has any authentication, which is why they are off the LAN.
+- *`127.0.0.1:3002` refused* — also intended: `ThreadingHTTPServer` binds exactly **one**
+  address, and that address is now the tailnet one. `tests/stack_check.py` follows
+  `[api] host` instead of assuming localhost, so the check stays honest.
+- *The whole stack refuses to start, complaining about `BIND_IP_TAILNET`* — the variable is
+  missing from `.env`. That is on purpose: an empty default would silently bind `0.0.0.0`
+  again and quietly undo the change. Put the tailnet address back.
+
+**To undo** (both are one line, no rebuild):
+
+```bash
+# proxy back onto the LAN: docker-compose.yml, service ollama-logproxy
+#   "127.0.0.1:11435:80"  ->  "${BIND_IP}:11435:80"
+docker compose up -d --no-deps --force-recreate ollama-logproxy
+
+# dashboard back onto the LAN: monitoring/config.toml -> [api] host = "0.0.0.0"
+sudo systemctl restart ollama-dashboard
+```
+
 ## Common Commands
 
 ### Docker Operations
@@ -188,7 +227,9 @@ http://<server-ip>:3002/?h=720   # letzte 30 Tage
 ```
 
 Charts: GPU VRAM, GPU utilization %, temperature/power, requests/hour, model distribution, prompt tokens vs duration.
-Bind reach is controlled by `BIND_IP` in `.env` (LAN by default; route via your VPN of choice if you need remote access).
+**Reachable over Tailscale only** — `<server-ip>` above means the tailnet address, not the LAN
+one. The bind comes from `[api] host` in `monitoring/config.toml`, not from `BIND_IP`. See
+"Who listens where" below before concluding the dashboard is down.
 
 ### CLI Reports
 
