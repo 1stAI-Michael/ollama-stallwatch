@@ -124,8 +124,23 @@ services:
       - --auto-truncate
 
     # CPU/RAM caps: leave headroom for ollama (2 cores active) + system.
-    # 10 GB memory (2 GB weights + warmup peak, TEI reports ~5 GB steady after warmup).
+    #
+    # The 10G is NOT generous — it is 0.05 GiB of slack. Measured 2026-09-24 (fA-1311):
+    # a fresh container reaches 9.97 GiB anon right after warmup, before serving a single
+    # request; 20 short requests and one oversize input move it by less than 0.03 GiB.
+    # The demand is real, not an allocator filling what it may have: the same start line
+    # under a 6G and a 4G cap is OOM-killed during warmup, while 10G comes up (control).
+    # An earlier note here claimed "~5 GB steady after warmup" — that is what `docker stats`
+    # shows once part of the process has been swapped out, not what it needs.
+    #
+    # The driver is --max-batch-tokens above, and it grows faster than the number:
+    #   2048 -> 2.32 GiB   4096 -> 3.90 GiB   8192 (today) -> 9.95 GiB
+    # Lowering it would halve the footprint, but it changes batching — run
+    # `python3 tests/tei_acceptance.py` against GX-10 first. Embeddings are Tabu ERGEBNIS:
+    # they do not fail, they answer differently. Decision pending in fA-1311.
+    #
     # CPU/RAM-Caps: Platz fuer ollama (aktuell 2 Cores) + Rest-System.
+    # Die 10G sind KEIN Puffer, sondern 0,05 GiB Luft — gemessen 24.09.2026, siehe oben.
     deploy:
       resources:
         limits:
