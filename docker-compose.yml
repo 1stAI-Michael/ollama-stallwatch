@@ -121,7 +121,19 @@ services:
       - --model-id=BAAI/bge-m3
       - --max-batch-tokens=8192
       - --max-client-batch-size=64
-      - --auto-truncate
+      # Must read "=false", NOT be left out. In TEI 1.9.3 --auto-truncate takes an optional
+      # value and defaults to TRUE (`--help`: "[default: true]"), unlike TEI 1.5.0 on ti-10
+      # where the bare flag is a boolean defaulting to false. Measured 2026-10-12 (fA-1437):
+      # with the line simply deleted, /info still reported auto_truncate true and an input of
+      # 26003 tokens still answered HTTP 200 with a 1x1024 vector in 32 s — a silent vector
+      # for a text nobody sent. Dropping the flag here would look like compliance and change
+      # nothing.
+      # Diese Zeile muss "=false" heissen, nicht fehlen: in TEI 1.9.3 ist die Flagge
+      # standardmaessig AN. Gegenprobe nach jeder Aenderung: /info zeigt auto_truncate false,
+      # und eine Eingabe ueber 8192 Token MUSS abgelehnt werden (Kontrollfall, muss rot sein).
+      # Folge ist gewollt: bisher still gekuerzte Aufrufe scheitern jetzt laut, der Aufrufer
+      # muss stueckeln.
+      - --auto-truncate=false
 
     # CPU/RAM caps: leave headroom for ollama (2 cores active) + system.
     #
