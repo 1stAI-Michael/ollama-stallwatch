@@ -23,6 +23,12 @@ services:
     # Pinned image version (not :latest) for controlled updates.
     # Image-Version gepinnt (nicht :latest), fuer kontrollierte Updates.
     # bis 11-Mai-206 Abstimmung s. Slack 9-Mai 10:09
+    #
+    # MESSLAUF 20.10.2026 abgeschlossen und zurueckgedreht (fA-1579). Gemessen mit
+    # 0.40.6 auf dieser Maschine: 4 von 12 klinischen Antworten weichen von der
+    # Referenz ab, dreifach reproduzierbar, bei unveraendertem Modell-Digest. Kein
+    # Umstieg, solange die Aerzte die neuen Antworten nicht gesehen haben.
+    # Wieder umstellen heisst: diese Zeile auf 0.40.6 und `docker compose up -d ollama`.
     image: ollama/ollama:0.19.0
 
     container_name: ollama
@@ -52,6 +58,18 @@ services:
       # 2 parallele Slots fuer Request-Batching; MoE profitiert von Parallelitaet.
       OLLAMA_NUM_PARALLEL: "2"
       OLLAMA_MAX_LOADED_MODELS: "2"
+      # ── Kein Weg nach draussen ──
+      # 0.40.x ruft beim Start von sich aus
+      # https://ollama.com/api/experimental/model-recommendations und wiederholt das
+      # alle 4 Stunden; dafuer legt es sich ein id_ed25519-Paar im Modellverzeichnis an.
+      # Gemessen 20.10.2026 im Schatten-Behaelter (fA-1579). Auf einer Maschine mit
+      # klinischen Daten ist das eine Verbindung, die niemand bestellt hat.
+      # Gegenprobe beider Richtungen: ohne die Variable steht "Ollama cloud disabled:
+      # false" im Log und cache/model-recommendations.json wird angelegt; mit ihr
+      # "skipping model recommendations refresh because cloud is disabled" und das
+      # Verzeichnis bleibt leer — bei voll funktionsfaehigem Dienst.
+      # In 0.19.0 wirkungslos (die Funktion gibt es dort nicht) und darum harmlos.
+      OLLAMA_NO_CLOUD: "true"
       # Queue depth: requests wait instead of forcing model unload (default 512).
       # Warteschlange: Requests warten statt Modelle zu entladen (Default 512).
       OLLAMA_MAX_QUEUE: "16"

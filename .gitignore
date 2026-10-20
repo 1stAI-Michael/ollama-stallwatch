@@ -31,6 +31,7 @@ monitoring/stalls/
 # Python bytecode
 monitoring/__pycache__/
 monitoring/**/__pycache__/
+tests/__pycache__/
 
 # Environment (kann Secrets enthalten)
 .env
@@ -43,3 +44,6 @@ monitoring/backup/
 
 # Lokale Sicherungen vor Eingriffen (bleiben auf der Maschine)
 *.bak-20*
+
+# Schatten-Modellspeicher der Versionspruefung (fA-1579) — 1,6 G, nie ins Repo
+ollama-probe/
