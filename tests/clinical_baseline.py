@@ -111,6 +111,37 @@ def warmlauf() -> None:
     print(f" {time.time() - t0:.1f}s")
 
 
+def stabilisieren() -> None:
+    """Ein Durchgang unbewertet, damit der Slot-Zustand VOR der Messung festliegt.
+
+    Michael, 20.10.2026, nach dem Umstieg auf ollama 0.40.6: dort haengt
+    `terminologie-1` vom Slot-Zustand ab — warm war `--vergleichen` dreimal 12/12,
+    nach einem Neuanlegen des Behaelters meldete derselbe Eintrag 353 -> 310 Zeichen,
+    und zwar in drei von drei Laeufen zeichengleich. Also zwei feste Zustaende, kein
+    Rauschen. Auf 0.19.0 trat das nicht auf.
+
+    Der Rauschboden zeigt den Ausweg: ab dem ZWEITEN Durchgang ist der Satz identisch
+    (Durchgaenge 2-5 deckungsgleich). Ein unbewerteter Durchgang vorweg laesst warmen
+    und kalten Fall im gleichen Zustand starten.
+
+    Prompts, Reihenfolge, Modell und Sampling-Optionen sind UNVERAENDERT. Festgelegt
+    wird nur der Zustand davor. Eine mit dieser Fassung angelegte Referenz gilt
+    deshalb auch nur fuer diese Fassung — nach der Umstellung neu anlegen.
+
+    KONTROLLFALL (fA-648): PROBE_OHNE_STABILISIERUNG=1 schaltet den Durchgang ab.
+    Dann MUSS `--vergleichen` nach einem Neuanlegen des Behaelters bei
+    `terminologie-1` rot werden. Bleibt es gruen, prueft die Stabilisierung nichts.
+    """
+    if os.environ.get("PROBE_OHNE_STABILISIERUNG") == "1":
+        print("  [KONTROLLFALL] Stabilisierungsdurchgang abgeschaltet")
+        return
+    print("  stabilisieren (ein Durchgang unbewertet) …", end="", flush=True)
+    t0 = time.time()
+    for _, prompt in PROMPTS:
+        chat(prompt)
+    print(f" {time.time() - t0:.1f}s")
+
+
 # ---------------------------------------------------------------- Rauschboden
 def rauschboden(n: int) -> int:
     """Liefert der SATZ bei Wiederholung dieselben Antworten?
@@ -122,6 +153,7 @@ def rauschboden(n: int) -> int:
     spaetere Abweichung nichts."""
     print(f"### Rauschboden — Satz {n}x in fester Reihenfolge, {MODELL}\n")
     warmlauf()
+    stabilisieren()
     durchgaenge: list[list[str]] = []
     for i in range(n):
         hashes = []
@@ -149,6 +181,7 @@ def anlegen() -> int:
     umf = umgebung()
     print(f"  Modell-Digest: {umf.get('digest', '?')[:20]}…  Ollama {umf.get('ollama_version', '?')}")
     warmlauf()
+    stabilisieren()
     eintraege = []
     for name, prompt in PROMPTS:
         t, w, d = chat(prompt)
@@ -182,6 +215,7 @@ def vergleichen() -> int:
         print("  [UMGEBUNG] Sampling-Optionen weichen ab — Vergleich nicht aussagekraeftig")
 
     warmlauf()
+    stabilisieren()
     abweichungen = []
     for e in alt["eintraege"]:
         t, w, _ = chat(e["prompt"])

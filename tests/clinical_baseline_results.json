@@ -1,5 +1,5 @@
 {
-  "erstellt": "2026-10-20T18:03:45+0000",
+  "erstellt": "2026-10-20T18:54:45+0000",
   "umgebung": {
     "modell": "alibayram/medgemma:27b",
     "optionen": {
@@ -23,7 +23,7 @@
       "sha": "ad1a8315d287df5c",
       "zeichen": 353,
       "eval_count": 77,
-      "sekunden": 6.51
+      "sekunden": 6.54
     },
     {
       "name": "terminologie-2",
@@ -32,7 +32,7 @@
       "sha": "fcc4e13475356b0e",
       "zeichen": 88,
       "eval_count": 28,
-      "sekunden": 2.49
+      "sekunden": 2.53
     },
     {
       "name": "struktur-1",
@@ -41,7 +41,7 @@
       "sha": "a841c9d4974bae0c",
       "zeichen": 569,
       "eval_count": 200,
-      "sekunden": 17.22
+      "sekunden": 17.32
     },
     {
       "name": "struktur-2",
@@ -50,7 +50,7 @@
       "sha": "847a5ced78f8591c",
       "zeichen": 72,
       "eval_count": 35,
-      "sekunden": 3.05
+      "sekunden": 3.06
     },
     {
       "name": "klassifikation-1",
@@ -59,7 +59,7 @@
       "sha": "4df8421b53792e69",
       "zeichen": 728,
       "eval_count": 200,
-      "sekunden": 17.22
+      "sekunden": 17.33
     },
     {
       "name": "dosis-1",
@@ -68,7 +68,7 @@
       "sha": "fd81a7224bfef138",
       "zeichen": 219,
       "eval_count": 58,
-      "sekunden": 4.94
+      "sekunden": 4.96
     },
     {
       "name": "abgrenzung-1",
@@ -77,7 +77,7 @@
       "sha": "26a90f8d9a3d358a",
       "zeichen": 237,
       "eval_count": 52,
-      "sekunden": 4.46
+      "sekunden": 4.49
     },
     {
       "name": "vignette-1",
@@ -86,7 +86,7 @@
       "sha": "9b8d0109acc2c6a3",
       "zeichen": 739,
       "eval_count": 200,
-      "sekunden": 17.18
+      "sekunden": 17.28
     },
     {
       "name": "negativ-1",
@@ -95,7 +95,7 @@
       "sha": "7290c7754430eab8",
       "zeichen": 821,
       "eval_count": 196,
-      "sekunden": 16.86
+      "sekunden": 16.94
     },
     {
       "name": "format-1",
@@ -104,7 +104,7 @@
       "sha": "7f2ffe9a165a20a2",
       "zeichen": 6,
       "eval_count": 3,
-      "sekunden": 0.71
+      "sekunden": 0.42
     },
     {
       "name": "laenge-1",
@@ -113,7 +113,7 @@
       "sha": "4f46767abb670460",
       "zeichen": 452,
       "eval_count": 97,
-      "sekunden": 8.67
+      "sekunden": 8.72
     },
     {
       "name": "sprache-1",
@@ -122,7 +122,7 @@
       "sha": "b5c61f12520b17d3",
       "zeichen": 7,
       "eval_count": 5,
-      "sekunden": 0.58
+      "sekunden": 0.59
     }
   ]
 }
