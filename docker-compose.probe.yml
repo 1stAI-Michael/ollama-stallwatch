@@ -1,0 +1,56 @@
+# Schatten-Behaelter fuer die Pruefung von ollama 0.40.6 (fA-1579, Stufe 1).
+# Beruehrt die Produktion NICHT: eigenes Modellverzeichnis, eigener Port, nur 127.0.0.1,
+# keine GPU, eigener Netzname. Aufruf:
+#   docker compose -f /srv/Container/docker-compose.probe.yml up -d
+#   docker compose -f /srv/Container/docker-compose.probe.yml down
+# EIGENES Compose-Projekt — und es gehoert auf die KOMMANDOZEILE, nicht nur hierher.
+# Jeder Aufruf dieser Datei lautet:
+#   docker compose -p ollama-probe -f /srv/Container/docker-compose.probe.yml up -d
+#   docker compose -p ollama-probe -f /srv/Container/docker-compose.probe.yml down
+#
+# Warum: ohne `-p` erbt die Probe COMPOSE_PROJECT_NAME=openllm aus der .env dieses
+# Verzeichnisses und landet im SELBEN Projekt wie die Produktion. Dann sind die fuenf
+# Produktionsbehaelter aus Sicht DIESER Datei "Waisen", und ein `down --remove-orphans`
+# aus der falschen Datei raeumt den ganzen Stack ab.
+#
+# Das `name:` unten allein genuegt dafuer NICHT — gemessen am 20.10.2026, 12:24 und 12:26:
+# mit `name: ollama-probe` in der Datei trug der Behaelter trotzdem das Label
+# com.docker.compose.project=openllm. Die Umgebungsvariable sticht die Datei; nur `-p`
+# sticht die Umgebungsvariable. Die Zeile bleibt als zweiter Riegel stehen, taugt aber
+# nicht als erster.
+name: ollama-probe
+
+services:
+  ollama-probe:
+    image: ollama/ollama:0.40.6
+    container_name: ollama-probe
+    restart: "no"
+    # Nur Loopback — kein LAN. Port-Exposition ist Tabu SICHERHEIT.
+    ports:
+      - "127.0.0.1:11436:11434"
+    volumes:
+      - /srv/Container/ollama-probe:/root/.ollama
+    environment:
+      # genau die acht Variablen der Produktion, damit 1b etwas prueft
+      OLLAMA_NUM_PARALLEL: "2"
+      OLLAMA_MAX_LOADED_MODELS: "2"
+      OLLAMA_MAX_QUEUE: "16"
+      OLLAMA_KEEP_ALIVE: "10m"
+      OLLAMA_DEBUG: "1"
+      OLLAMA_CONTEXT_LENGTH: "131072"
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_GPU_OVERHEAD: "2147483648"
+      # NEU in 0.40.x und hier unter Pruefung: ohne diesen Riegel ruft der Dienst beim
+      # Start von sich aus https://ollama.com/api/experimental/model-recommendations
+      # (gemessen 20.10.2026 12:24). Auf einer Klinikmaschine ist das eine Verbindung
+      # nach draussen, die niemand bestellt hat.
+      OLLAMA_NO_CLOUD: "true"
+      # keine Karte sehen: CPU-Lauf, damit der Produktions-VRAM-Pool unberuehrt bleibt
+      CUDA_VISIBLE_DEVICES: ""
+      NVIDIA_VISIBLE_DEVICES: "void"
+    # Riegel gegen Speicherdruck auf dem Host (30 GiB, tei-embed swappt bereits)
+    mem_limit: 6g
+    cpus: 4
+    logging:
+      driver: json-file
+      options: {max-size: "25m", max-file: "4"}

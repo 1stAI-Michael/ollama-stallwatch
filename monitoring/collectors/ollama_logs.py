@@ -26,7 +26,31 @@ RUNNER_PATTERN = re.compile(
 # (cache.go in Ollama). The earlier 'completion request' line also has
 # prompt=N, but there it is len(req.Prompt) — bytes/chars, not tokens
 # (~3-4x the token count for typical text). Use cache.go for charts.
-PROMPT_TOKENS_PATTERN = re.compile(r'msg="loading cache slot".*?prompt=(\d+)')
+#
+# ZWEI Fassungen, weil Ollama die Zeile zwischen 0.19.0 und 0.40.x umbenannt hat
+# (gemessen 20.10.2026 im Schatten-Behaelter, fA-1579 Stufe 1c):
+#
+#   0.19.0   msg="loading cache slot" id=0 cache=0 prompt=19 used=0 remaining=19
+#   0.40.6   slot operator(): id 0 | task 0 | new prompt, n_ctx_slot = 8192,
+#                             n_keep = 4, task.n_tokens = 19
+#
+# Der Collector waere nach einem Update NICHT gescheitert: er haette weiter Zeilen
+# geschrieben, nur ohne prompt_tokens — der Token-Chart waere leer geblieben und
+# niemand haette einen Fehler gesehen. Darum beide Muster, nicht eines ersetzt: die
+# Produktion faehrt bis zum Umstieg 0.19.0, danach 0.40.x, und derselbe Collector
+# muss beides lesen.
+#
+# Warum task.n_tokens und nicht "prompt eval time = ... / N tokens": task.n_tokens ist
+# die GANZE Prompt-Laenge, genau wie das alte prompt=N. Die print_timing-Zeile nennt nur
+# die neu berechneten Token (bei Prefix-Treffern weniger) — damit waere der Chart nach
+# dem Update nicht mehr mit dem davor vergleichbar.
+#
+# NICHT nehmen: msg="llama-server completion request" ... prompt_len=99. Das ist auch in
+# 0.40.6 die Zeichenlaenge, nicht die Tokenzahl (gemessen: prompt_len=99 bei 19 Token).
+PROMPT_TOKENS_PATTERN = re.compile(
+    r'msg="loading cache slot".*?prompt=(\d+)'                    # 0.19.0
+    r'|new prompt,.*?task\.n_tokens\s*=\s*(\d+)'                 # 0.40.x
+)
 
 
 def parse_duration(dur_str):
@@ -114,7 +138,9 @@ def main():
 
             tok_match = PROMPT_TOKENS_PATTERN.search(line)
             if tok_match:
-                current_prompt_tokens = int(tok_match.group(1))
+                # Gruppe 1 = 0.19.0-Fassung, Gruppe 2 = 0.40.x-Fassung; genau eine traegt.
+                treffer = tok_match.group(1) or tok_match.group(2)
+                current_prompt_tokens = int(treffer)
                 continue
 
             gin_match = GIN_PATTERN.search(line)
