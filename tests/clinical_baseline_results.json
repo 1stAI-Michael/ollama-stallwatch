@@ -1,5 +1,5 @@
 {
-  "erstellt": "2026-08-09T14:35:46+0000",
+  "erstellt": "2026-10-20T18:03:45+0000",
   "umgebung": {
     "modell": "alibayram/medgemma:27b",
     "optionen": {
@@ -13,17 +13,17 @@
     "digest": "391385363ee95e4fece74782a4ceffdf53954d6c18b231253ba0bc26b3c039a6",
     "groesse": 16546690451,
     "geaendert": "2025-09-17T13:54:45.509941652Z",
-    "ollama_version": "0.19.0"
+    "ollama_version": "0.40.6"
   },
   "eintraege": [
     {
       "name": "terminologie-1",
       "prompt": "Erklaere den Unterschied zwischen Praevalenz und Inzidenz in zwei Saetzen.",
-      "antwort": "*   **Inzidenz** misst die Rate, mit der in einem bestimmten Zeitraum neue Fälle einer Krankheit in einer Population auftreten.\n*   **Praevalenz** misst den Anteil der Personen in einer Population, die zu einem bestimmten Zeitpunkt an einer Krankheit leiden (sowohl neue als auch bestehende Fälle).",
-      "sha": "48566d2aed8d5d13",
-      "zeichen": 298,
-      "eval_count": 67,
-      "sekunden": 6.6
+      "antwort": "*   **Inzidenz** misst die Rate, mit der in einem bestimmten Zeitraum neue Fälle einer Krankheit in einer Risikopopulation auftreten.\n*   **Praevalenz** misst den Anteil der Personen in einer Population, die zu einem bestimmten Zeitpunkt (oder über einen bestimmten Zeitraum) an einer Krankheit leiden, unabhängig davon, wann die Krankheit begonnen hat.",
+      "sha": "ad1a8315d287df5c",
+      "zeichen": 353,
+      "eval_count": 77,
+      "sekunden": 6.51
     },
     {
       "name": "terminologie-2",
@@ -32,16 +32,16 @@
       "sha": "fcc4e13475356b0e",
       "zeichen": 88,
       "eval_count": 28,
-      "sekunden": 3.19
+      "sekunden": 2.49
     },
     {
       "name": "struktur-1",
       "prompt": "Gliedere einen Arztbrief in seine ueblichen Abschnitte. Nur die Ueberschriften, als Liste.",
-      "antwort": "*   **Briefkopf** (mit Absenderdaten)\n*   **Empfängeradresse**\n*   **Datum**\n*   **Betreff**\n*   **Anrede**\n*   **Einleitung** (z.B. Vorstellung, Anlass des Schreibens)\n*   **Hauptteil** (detaillierte Beschreibung des Falls, Befunde, Diagnosen, Behandlungen, Verlauf)\n*   **Zusammenfassung/Schlussfolgerung**\n*   **Empfehlungen/Anordnungen**\n*   **Grußformel**\n*   **Unterschrift**\n*   **Nachtrag/Anlagenverzeichnis** (falls vorhanden)",
-      "sha": "47e4e4634b2dc6bb",
-      "zeichen": 435,
-      "eval_count": 146,
-      "sekunden": 13.94
+      "antwort": "Hier sind die üblichen Abschnitte eines Arztbriefes, aufgelistet als Überschriften:\n\n1.  **Briefkopf** (mit Absenderdaten)\n2.  **Empfängeradresse**\n3.  **Datum**\n4.  **Betreff**\n5.  **Anrede**\n6.  **Einleitung/Exordium** (z.B. Bezugnahme auf vorherige Korrespondenz, Vorstellung des Patienten)\n7.  **Anamnese** (Krankengeschichte)\n8.  **Körperliche Untersuchung** (Status Praesens)\n9.  **Diagnose(n)**\n10. **Therapie/Behandlung**\n11. **Prognose** (optional)\n12. **Empfehlungen/Weiterleitung** (z.B. an andere Fachärzte, für weitere Untersuchungen)\n13. **Schlussformel**",
+      "sha": "a841c9d4974bae0c",
+      "zeichen": 569,
+      "eval_count": 200,
+      "sekunden": 17.22
     },
     {
       "name": "struktur-2",
@@ -50,16 +50,16 @@
       "sha": "847a5ced78f8591c",
       "zeichen": 72,
       "eval_count": 35,
-      "sekunden": 3.9
+      "sekunden": 3.05
     },
     {
       "name": "klassifikation-1",
       "prompt": "Zu welchem ICD-10-Kapitel gehoeren Erkrankungen des Kreislaufsystems? Nenne Kapitel und Bereich.",
-      "antwort": "Erkrankungen des Kreislaufsystems gehören im ICD-10 zu **Kapitel IX: Krankheiten des Verdauungssystems** und **Kapitel XI: Krankheiten des Kreislaufsystems**.\n\n*   **Kapitel IX (K00-K93): Krankheiten des Verdauungssystems** enthält einige Aspekte, die das Kreislaufsystem betreffen können, insbesondere im Zusammenhang mit Lebererkrankungen (z.B. portale Hypertension, K66).\n*   **Kapitel XI (I00-I99): Krankheiten des Kreislaufsystems** ist das Hauptkapitel, das sich mit Erkrankungen des Herzens und der Blutgefäße befasst.\n\nDa die Frage nach \"Erkrankungen des Kreislaufsystems\" allgemein gestellt ist, ist **Kapitel XI (I00-I99)** die korrekte und umfassendste Antwort.",
-      "sha": "8139e80fe6e638c1",
-      "zeichen": 672,
-      "eval_count": 196,
-      "sekunden": 19.89
+      "antwort": "Erkrankungen des Kreislaufsystems gehören im ICD-10 zu **Kapitel IX: Krankheiten des Verdauungssystems** und **Kapitel XI: Krankheiten des Kreislaufsystems**.\n\n*   **Kapitel IX (K00-K93): Krankheiten des Verdauungssystems** enthält einige Aspekte, die das Kreislaufsystem betreffen können, insbesondere im Zusammenhang mit Lebererkrankungen (z.B. portale Hypertension, K66.9) und deren Auswirkungen.\n*   **Kapitel XI (I00-I99): Krankheiten des Kreislaufsystems** ist das Hauptkapitel, das sich mit Erkrankungen des Herzens, der Blutgefäße und der allgemeinen Kreislaufregulation befasst.\n\nDa die Frage nach \"Erkrankungen des Kreislaufsystems\" allgemein gestellt ist, ist **Kapitel XI** die relevanteste und umfassendste Antwort.",
+      "sha": "4df8421b53792e69",
+      "zeichen": 728,
+      "eval_count": 200,
+      "sekunden": 17.22
     },
     {
       "name": "dosis-1",
@@ -68,7 +68,7 @@
       "sha": "fd81a7224bfef138",
       "zeichen": 219,
       "eval_count": 58,
-      "sekunden": 6.01
+      "sekunden": 4.94
     },
     {
       "name": "abgrenzung-1",
@@ -77,7 +77,7 @@
       "sha": "26a90f8d9a3d358a",
       "zeichen": 237,
       "eval_count": 52,
-      "sekunden": 5.66
+      "sekunden": 4.46
     },
     {
       "name": "vignette-1",
@@ -86,16 +86,16 @@
       "sha": "9b8d0109acc2c6a3",
       "zeichen": 739,
       "eval_count": 200,
-      "sekunden": 19.36
+      "sekunden": 17.18
     },
     {
       "name": "negativ-1",
       "prompt": "Nenne drei Gruende, warum ein Laborwert falsch-positiv ausfallen kann. Als Liste.",
-      "antwort": "Hier sind drei Gründe, warum ein Laborwert falsch-positiv ausfallen kann:\n\n1.  **Kreuzreaktionen:** Antikörper oder andere Reagenzien im Test können fälschlicherweise mit Substanzen im Körper reagieren, die der Zielsubstanz ähnlich sind. Dies führt zu einem positiven Ergebnis, obwohl die Zielsubstanz tatsächlich nicht vorhanden ist.\n2.  **Kontamination:** Die Probe kann während der Sammlung, Handhabung oder Analyse mit einer fremden Substanz kontaminiert werden, die den Test positiv auslöst.\n3.  **Analytische Fehler:** Probleme mit der Testmethode selbst, den Geräten oder der Durchführung des Tests können zu falschen positiven Ergebnissen führen. Dazu gehören beispielsweise fehlerhafte Kalibrierung, Reagenzienfehler oder menschliche Fehler bei der Interpretation.",
-      "sha": "a8b2402d420f8174",
-      "zeichen": 773,
-      "eval_count": 178,
-      "sekunden": 18.18
+      "antwort": "Hier sind drei Gründe, warum ein Laborwert falsch-positiv ausfallen kann:\n\n1.  **Kreuzreaktionen:** Antikörper oder andere Substanzen im Testkit können mit Substanzen in der Probe reagieren, die dem Zielanalyten ähneln, aber nicht der eigentliche Analyte sind. Dies führt zu einem positiven Ergebnis, obwohl der Analyte tatsächlich nicht vorhanden ist.\n2.  **Kontamination:** Die Probe kann während der Sammlung, Handhabung oder Analyse mit dem Analyten oder einer Substanz, die eine Reaktion auslöst, kontaminiert werden. Dies kann zu einem falsch-positiven Ergebnis führen.\n3.  **Analytische Fehler:** Probleme mit der Testmethode selbst, wie z. B. fehlerhafte Kalibrierung des Geräts, Probleme mit den Reagenzien oder menschliche Fehler bei der Durchführung des Tests, können zu einem falsch-positiven Ergebnis führen.",
+      "sha": "7290c7754430eab8",
+      "zeichen": 821,
+      "eval_count": 196,
+      "sekunden": 16.86
     },
     {
       "name": "format-1",
@@ -104,7 +104,7 @@
       "sha": "7f2ffe9a165a20a2",
       "zeichen": 6,
       "eval_count": 3,
-      "sekunden": 0.74
+      "sekunden": 0.71
     },
     {
       "name": "laenge-1",
@@ -113,7 +113,7 @@
       "sha": "4f46767abb670460",
       "zeichen": 452,
       "eval_count": 97,
-      "sekunden": 10.32
+      "sekunden": 8.67
     },
     {
       "name": "sprache-1",
@@ -122,7 +122,7 @@
       "sha": "b5c61f12520b17d3",
       "zeichen": 7,
       "eval_count": 5,
-      "sekunden": 1.03
+      "sekunden": 0.58
     }
   ]
 }

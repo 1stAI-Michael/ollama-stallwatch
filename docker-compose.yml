@@ -24,12 +24,28 @@ services:
     # Image-Version gepinnt (nicht :latest), fuer kontrollierte Updates.
     # bis 11-Mai-206 Abstimmung s. Slack 9-Mai 10:09
     #
-    # MESSLAUF 20.10.2026 abgeschlossen und zurueckgedreht (fA-1579). Gemessen mit
-    # 0.40.6 auf dieser Maschine: 4 von 12 klinischen Antworten weichen von der
-    # Referenz ab, dreifach reproduzierbar, bei unveraendertem Modell-Digest. Kein
-    # Umstieg, solange die Aerzte die neuen Antworten nicht gesehen haben.
-    # Wieder umstellen heisst: diese Zeile auf 0.40.6 und `docker compose up -d ollama`.
-    image: ollama/ollama:0.19.0
+    # UMSTIEG 20.10.2026 auf Michaels Freigabe (fA-1579): "die Aenderunge waren alle
+    # akzeptabel bei medgemma / mach die Umstellung auf 40 Fertig wir Testen mit den
+    # Aerzten alles". Vorher gemessen: 4 von 12 klinischen Antworten weichen ab (5 von 12
+    # ohne die 200-Token-Decke des Referenzsatzes), dreifach reproduzierbar, bei
+    # unveraendertem Modell-Digest.
+    #
+    # Die Abweichung ist NICHT wegkonfigurierbar, und zwar aus zwei verschiedenen Gruenden
+    # je Architektur (gemessen 20.10.2026):
+    #   gemma3 / qwen35 / qwen35moe / nomic-bert -> 0.19.0 fuhr diese ueber ollamas EIGENE
+    #     Go-Engine ("starting ollama engine"), ab 0.30.0 ist der Unterbau entfernt und
+    #     alles laeuft ueber llama.cpp. Ein Implementierungswechsel, kein Schalter.
+    #   gemma2 / llama -> beidseitig llama.cpp, Rest ist Numerik zwischen den Staenden.
+    #
+    # Die klinische Referenz ist nach dem Umstieg NEU angelegt und gilt nur fuer diesen
+    # Stand. Die alte Fassung liegt in der Git-Historie und als ARCHIV-Datei bei den
+    # Messungen (2026-10-20_ti30-klinische-referenz-0.19.0-ARCHIV.json).
+    #
+    # Zurueck heisst: diese Zeile auf 0.19.0, `docker compose up -d ollama`, UND die alte
+    # Referenz zurueckholen - ohne sie meldet die Tagespruefung 12/12 rot.
+    # ACHTUNG beim Rueckweg: gpt-oss:20b ist unter 0.40.x nicht lesbar (alte MXFP4-
+    # Typkennung 4); das Modell ist am 20.10.2026 auf Ansage entfernt worden.
+    image: ollama/ollama:0.40.6
 
     container_name: ollama
     restart: unless-stopped
