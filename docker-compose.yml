@@ -149,7 +149,28 @@ services:
     #   2048 -> 2.32 GiB   4096 -> 3.90 GiB   8192 (today) -> 9.95 GiB
     # Lowering it would halve the footprint, but it changes batching — run
     # `python3 tests/tei_acceptance.py` against GX-10 first. Embeddings are Tabu ERGEBNIS:
-    # they do not fail, they answer differently. Decision pending in fA-1311.
+    # they do not fail, they answer differently.
+    #
+    # 12G — decided by Michael 2026-10-20 (fA-1311): raise the cap, leave --max-batch-tokens
+    # alone. Why the cap is the problem and not merely "99.5% full": measured 2026-10-20, two
+    # days after the container started, anon was 4.86 GiB AND swap 5.29 GiB — the working set
+    # is ~10.1 GiB and the kernel keeps half of it on disk to stay under the cap
+    # (memory.events max = 1426 in those two days, oom_kill 0). The "~4.9 GiB" that
+    # `docker stats` reports is exactly the swapped-out illusion the paragraph above warns of.
+    # A cap is a limit, not a reservation: the host has 30 GiB, so 12G here and 10G on
+    # tei-rerank can only collide if both peak at once — tei-rerank sits at 0.5 GiB.
+    # Takes effect ONLY when the container is recreated (`docker compose up -d tei-embed`),
+    # which is an intervention — not inside the clinical window Mo-Fr 08:00-15:00 Berlin.
+    # Gegenprobe after recreating: memory.swap.current must fall well below 5 GiB and
+    # memory.events max must stop climbing. Control case = one 8103-token input, which took
+    # 33.71 s on 2026-10-12 with half the working set swapped out; if it is not faster, the
+    # swap was not the cost and this change bought nothing.
+    #
+    # 12G — entschieden von Michael am 20.10.2026 (fA-1311): Deckel hoch, max-batch-tokens
+    # bleibt. Wirkt erst beim NEUANLEGEN des Containers, nicht im Klinikfenster.
+    # Offen (fA-1311 Teil 2): ob dieser Endpunkt ueberhaupt benutzt wird. Open WebUI auf
+    # diesem Host embedded lokal mit all-MiniLM-L6-v2, nicht hier; Klaerung mit dem
+    # Flows-Lastmanagement laeuft. Faellt sie negativ aus, kann der Dienst weg statt groesser.
     #
     # CPU/RAM-Caps: Platz fuer ollama (aktuell 2 Cores) + Rest-System.
     # Die 10G sind KEIN Puffer, sondern 0,05 GiB Luft — gemessen 24.09.2026, siehe oben.
@@ -157,7 +178,7 @@ services:
       resources:
         limits:
           cpus: "4"
-          memory: 10G
+          memory: 12G
 
   tei-rerank:
     logging: *logdefaults
