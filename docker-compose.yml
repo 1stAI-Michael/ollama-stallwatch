@@ -90,6 +90,32 @@ services:
       retries: 5
 
   tei-embed:
+    # ABGESCHALTET am 20.10.2026 auf Michaels Ansage (fA-1311 / fA-1575).
+    # Switched off 2026-10-20 — kept, not deleted: a compose profile takes it out of
+    # `docker compose up -d` while the documented state below stays readable in full.
+    # Wieder einschalten: `docker compose --profile aus up -d tei-embed`. Der Modell-Cache
+    # unter ${DATA_ROOT}/tei-embed (2,2 G) ist absichtlich nicht angetastet.
+    #
+    # Grund, gemessen (fA-1575, Antwort des Flows-Lastmanagements 20.10.2026 09:46): der
+    # Endpunkt ti30-embed-cpu steht seit dem 13.10.2026 auf enabled=FALSE — das ist Michaels
+    # eigener Entscheid aus fA-1434 — und zaehlt 0 Anfragen in 30 Tagen; die letzten 37
+    # ueberhaupt am 23./24.09. Kontrollfall derselben Maschine im selben Zeitraum:
+    # ti30-rerank-cpu 18, ti30-combined 30.077. Die Null ist also echt und nicht eine leere
+    # Tabelle. Zweiter Beleg von hier: Open WebUI auf diesem Host embedded lokal mit
+    # all-MiniLM-L6-v2 (RAG_EMBEDDING_MODEL), ruft :8001 also nicht; am 20.10. um 12:20 stand
+    # keine einzige Verbindung auf dem Port.
+    #
+    # Der Deckel unten (12G, Commit 821e995) wurde damit gegenstandslos, BEVOR er je wirkte:
+    # er haette erst beim Neuanlegen gegriffen. Er bleibt als Messung stehen, weil die
+    # Begruendung unabhaengig vom Abschalten gilt — falls der Dienst zurueckkommt, kommt er
+    # mit 12G zurueck.
+    #
+    # Rest-Risiko, ausdruecklich getragen (Michael, 20.10.2026): wer am Lastmanagement vorbei
+    # direkt auf :8001 geht, bekommt ab jetzt "connection refused". Ehrlich dazu: WIR sehen
+    # das nicht von selbst — eine abgewiesene Verbindung wird nirgends protokolliert, sie
+    # faellt nur der Gegenseite auf. Michael: "wenn jemand am lastmanagement vorbei geht
+    # werden wir es dann sehen, das ist besser als es nicht zu wissen."
+    profiles: ["aus"]
     logging: *logdefaults
     # CPU-only Text-Embeddings-Inference (bge-m3) as failover for the GX-10 :8001 endpoint.
     # Same host port 8001 as GX-10 for drop-in compatibility — Coordinator registers TI-30 as backup rank.

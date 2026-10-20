@@ -52,7 +52,12 @@ done
 
 echo
 echo "Container"
-for c in ollama openwebui tei-embed tei-rerank rerank-adapter; do
+# tei-embed steht hier nicht mehr: seit 20.10.2026 abgeschaltet (fA-1311/fA-1575).
+# Compose startet ihn nicht mehr (Profil "aus"), also darf er nach einem Neustart
+# auch nicht laufen — ihn hier zu verlangen, haette bei jedem Reboot ein falsches
+# Rot erzeugt. Zurueck: `docker compose --profile aus up -d tei-embed` und diese
+# beiden Listen wieder ergaenzen.
+for c in ollama openwebui tei-rerank rerank-adapter; do
   S=$(docker inspect "$c" --format '{{.State.Status}}' 2>/dev/null)
   [ "$S" = "running" ] && ok "$c laeuft" || fail "$c: Status '$S'"
 done
@@ -65,7 +70,7 @@ echo "Log-Deckel — der eigentliche Zweck des Termins"
 # {"max-file":"4","max-size":"25m"} aus — die 4 steht vor der 25m, das Muster
 # verlangte die andere Reihenfolge. Ein Textmuster über strukturierte Ausgabe
 # prüft die Formatierung, nicht den Wert.
-for c in ollama openwebui tei-embed tei-rerank rerank-adapter; do
+for c in ollama openwebui tei-rerank rerank-adapter; do
   GROESSE=$(docker inspect "$c" --format '{{index .HostConfig.LogConfig.Config "max-size"}}' 2>/dev/null)
   DATEIEN=$(docker inspect "$c" --format '{{index .HostConfig.LogConfig.Config "max-file"}}' 2>/dev/null)
   if [ "$GROESSE" = "25m" ] && [ "$DATEIEN" = "4" ]; then

@@ -60,7 +60,13 @@ MONITORING = REPO / "monitoring"
 
 # ti-30-Vorgaben. Sie gelten nur, solange config.toml nichts anderes sagt.
 STANDARD = {
-    "container": ["ollama", "openwebui", "tei-embed", "tei-rerank", "rerank-adapter",
+    # tei-embed fehlt hier absichtlich: seit 20.10.2026 abgeschaltet (fA-1311/fA-1575,
+    # Michaels Ansage) — das Flows-Lastmanagement hat den Endpunkt seit 13.10. auf
+    # enabled=FALSE und zaehlte 0 Anfragen in 30 Tagen. Stuende er weiter in dieser Liste,
+    # meldete die Tagespruefung ab jetzt jeden Tag ein Rot, das keines ist — und das
+    # naechste echte Rot ginge darin unter. Kommt der Dienst zurueck
+    # (`docker compose --profile aus up -d tei-embed`), gehoert er auch hier wieder hinein.
+    "container": ["ollama", "openwebui", "tei-rerank", "rerank-adapter",
                   "ollama-logproxy"],
     "dienste": ["ollama-gpu-logger", "ollama-log-parser", "ollama-process-logger",
                 "ollama-stall-detector", "ollama-dashboard"],

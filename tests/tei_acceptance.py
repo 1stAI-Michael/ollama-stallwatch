@@ -6,7 +6,10 @@ Kriterien (aus 2026-07-07_SPEC_embedding-reranker_fuer-TI-30-CPU-backup_from_gx1
   Embedding:  Dimension == 1024, ||v|| ≈ 1.0, Cosine-Sim(TI-30, GX-10) ≥ 0.98
   Reranker:   gleiche Rangfolge, Score-Größenordnung im selben Bereich (roh, negativ möglich)
 
-Exit-Code 0 = alle Assertions bestanden, 1 = mindestens eine gescheitert.
+Exit-Code 0 = alle Assertions bestanden, 1 = mindestens eine gescheitert,
+2 = nicht anwendbar, weil tei-embed auf ti-30 abgeschaltet ist (seit 20.10.2026,
+fA-1311/fA-1575). 2 ist ausdruecklich NICHT 0: der Embedding-Teil wurde dann nicht
+geprueft, und ein nicht gelaufener Test darf nicht wie ein bestandener aussehen.
 """
 
 import json
@@ -91,6 +94,22 @@ def main() -> int:
     print("=" * 78)
     print("TEI CPU-Backup Acceptance-Test — TI-30 vs. GX-10")
     print("=" * 78)
+
+    # Der Embedding-Teil dieses Tests braucht tei-embed auf :8001. Dieser Dienst ist auf
+    # ti-30 seit dem 20.10.2026 abgeschaltet (fA-1311/fA-1575): das Flows-Lastmanagement
+    # fuehrt den Endpunkt seit 13.10. als enabled=FALSE und zaehlte 0 Anfragen in 30 Tagen.
+    # Darum hier ein eigener Ausgang 2 statt eines Fehlschlags (1) ODER eines stillen
+    # Ueberspringens: ein uebersprungener Teil, der wie ein bestandener aussieht, ist genau
+    # die Falle aus fA-648. Exit 2 heisst "nicht anwendbar" und ist weder gruen noch rot.
+    if get("http://localhost:8001/health") != 200:
+        print("\n  TI-30 embed (:8001) antwortet nicht.")
+        print("  Das ist der ERWARTETE Zustand seit 20.10.2026 — tei-embed ist abgeschaltet")
+        print("  (fA-1311/fA-1575, Compose-Profil \"aus\"). Der Embedding-Teil wird damit")
+        print("  NICHT geprueft; der Reranker-Teil braucht diesen Dienst nicht.")
+        print("  Zum Pruefen vorher einschalten:")
+        print("    docker compose --profile aus up -d tei-embed")
+        print("\n  Ergebnis: NICHT ANWENDBAR (Exit 2) — nicht als bestanden lesen.")
+        return 2
 
     print("\n[1/4] Health-Probe beide Systeme")
     for label, url in [("GX-10 embed", "http://100.123.138.47:8001/health"),
