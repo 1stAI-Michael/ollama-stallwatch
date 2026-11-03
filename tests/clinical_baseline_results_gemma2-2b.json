@@ -1,0 +1,128 @@
+{
+  "erstellt": "2026-11-03T14:00:08+0000",
+  "umgebung": {
+    "modell": "gemma2:2b",
+    "optionen": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_predict": 200,
+      "top_k": 1,
+      "top_p": 1.0
+    },
+    "ollama_base": "http://127.0.0.1:11434",
+    "digest": "8ccf136fdd5298f3ffe2d69862750ea7fb56555fa4d5b18c04e3fa4d82ee09d7",
+    "groesse": 1629518495,
+    "geaendert": "2025-09-17T12:49:55.338546403Z",
+    "ollama_version": "0.40.6"
+  },
+  "eintraege": [
+    {
+      "name": "terminologie-1",
+      "prompt": "Erklaere den Unterschied zwischen Praevalenz und Inzidenz in zwei Saetzen.",
+      "antwort": "Hier ist eine Erklärung des Unterschieds zwischen Prävalenz und Inzidenz in zwei Sätzen:\n\n**Prävalenz** beschreibt die Häufigkeit einer Krankheit oder eines Phänomens in einer bestimmten Bevölkerungsgruppe, unabhängig von der aktuellen Anzahl von Erkrankungen. Es ist eine statistische Kennzahl, die die Gesamtzahl der betroffenen Personen in der Bevölkerung angibt. \n\n**Inzidenz** hingegen beschreibt die Häufigkeit einer Krankheit oder eines Phänomens in einer bestimmten Gruppe, gemessen an der Anzahl der neuen Fälle innerhalb einer bestimmten Zeitspanne. Es ist eine zeitliche Kennzahl, die die Rate der neuen Erkrankungen in der Bevölkerung angibt.",
+      "sha": "3a860988497bffe0",
+      "zeichen": 654,
+      "eval_count": 135,
+      "sekunden": 0.52
+    },
+    {
+      "name": "terminologie-2",
+      "prompt": "Was bedeutet die Abkuerzung CRP in der Labordiagnostik? Antworte in einem Satz.",
+      "antwort": "CRP steht für C-Reactive Protein und ist ein Protein, das im Körper produziert wird, wenn es Entzündungen gibt.",
+      "sha": "0ad9c313a23ddcc2",
+      "zeichen": 111,
+      "eval_count": 28,
+      "sekunden": 0.11
+    },
+    {
+      "name": "struktur-1",
+      "prompt": "Gliedere einen Arztbrief in seine ueblichen Abschnitte. Nur die Ueberschriften, als Liste.",
+      "antwort": "Hier sind die üblichen Abschnitte eines Arztbriefes in einer Liste:\n\n* **Anrede und Kontaktdaten**\n* **Patientendaten**\n* **Behandlungsdetails**\n* **Diagnose**\n* **Behandlungsplan**\n* **Follow-up-Plan**\n* **Anweisungen**\n* **Unterschrift und Datum**",
+      "sha": "58cb42e31a27615b",
+      "zeichen": 249,
+      "eval_count": 79,
+      "sekunden": 0.3
+    },
+    {
+      "name": "struktur-2",
+      "prompt": "Nenne die fuenf Vitalparameter, die bei einer Aufnahme routinemaessig erhoben werden. Nur die Liste.",
+      "antwort": "* Blutdruck\n* Puls\n* Temperatur\n* Atmung\n* Gewicht",
+      "sha": "d2ac471a166446dc",
+      "zeichen": 50,
+      "eval_count": 19,
+      "sekunden": 0.09
+    },
+    {
+      "name": "klassifikation-1",
+      "prompt": "Zu welchem ICD-10-Kapitel gehoeren Erkrankungen des Kreislaufsystems? Nenne Kapitel und Bereich.",
+      "antwort": "Erkrankungen des Kreislaufsystems gehören zum **ICD-10-Kapitel 14** (**Kreislaufsystem**) und unterteilen sich in verschiedene Bereiche:\n\n* **14.0** - **Herz-Kreislauf-Erkrankungen**\n    * 14.00 - **Herz-Kreislauf-Erkrankungen**\n    * 14.01 - **Herzinsuffizienz**\n    * 14.02 - **Atherosklerose**\n    * 14.03 - **Koronararterien-Erkrankungen**\n    * 14.04 - **Herz-Kreislauf-Erkrankungen**\n    * 14.05 - **Aortenaneurysma**\n    * 14.06 - **Aortenstenose**\n    * 14.07 - **Aorten- und Ventrikelschwäche**\n    * 1",
+      "sha": "1dc01c04443d5ca3",
+      "zeichen": 511,
+      "eval_count": 200,
+      "sekunden": 0.74
+    },
+    {
+      "name": "dosis-1",
+      "prompt": "Erklaere, was 'BID' und 'TID' auf einem Medikationsplan bedeuten. Ein Satz je Abkuerzung.",
+      "antwort": "Hier sind die Erklärungen zu \"BID\" und \"TID\":\n\n* **BID** steht für \"**B**egin **I**n **D**ay\" und bezieht sich auf die Zeit, zu der ein Medikament eingenommen wird. Es bedeutet, dass das Medikament am besten morgens eingenommen wird.\n* **TID** steht für \"**T**ime **I**n **D**ay\" und bezieht sich auf die Zeit, zu der ein Medikament eingenommen wird. Es bedeutet, dass das Medikament am besten nach dem Mittagessen eingenommen wird.",
+      "sha": "dd63d8098e8edb2a",
+      "zeichen": 432,
+      "eval_count": 126,
+      "sekunden": 0.47
+    },
+    {
+      "name": "abgrenzung-1",
+      "prompt": "Worin unterscheiden sich Sensitivitaet und Spezifitaet eines Tests? Zwei Saetze.",
+      "antwort": "## Sensitivität und Spezifität: Zwei Seiten des gleichen Münzens\n\n**Sensitivität** und **Spezifität** sind zwei wichtige Kennzahlen, die die Leistung eines Tests in der Medizin oder in anderen Bereichen beschreiben. \n\n**Sensitivität** beschreibt die Fähigkeit eines Tests, **positive** Ergebnisse zu liefern, wenn der **positive** Zustand tatsächlich vorliegt. \n* **Beispiel:** Ein Test, der bei einer Erkrankung positiv ist, sollte auch bei einer Erkrankung tatsächlich positiv sein. \n* **Sensitivität** ist also die **Wahrscheinlichkeit, dass der Test den positiven Zustand erkennt, wenn er tatsächlich vorhanden ist.**\n\n**Spezifität** beschreibt die Fähigkeit eines Tests, **negative** Ergebnisse zu liefern, wenn der **negative** Zustand tatsächlich **nicht** vorliegt. \n* **Beispiel:** Ein Test, der bei einer Erkrankung negativ ist, sollte auch bei einer Erkrankung tatsächlich negativ sein. \n* **Spezifität** ist also die **Wahrscheinlichkeit, dass",
+      "sha": "2c00cb4ca4eb09c7",
+      "zeichen": 955,
+      "eval_count": 200,
+      "sekunden": 0.75
+    },
+    {
+      "name": "vignette-1",
+      "prompt": "Fasse zusammen, welche Angaben eine Anamnese mindestens enthalten soll. Als kurze Liste.",
+      "antwort": "Hier sind die wichtigsten Angaben, die eine Anamnese mindestens enthalten sollte:\n\n**Persönliche Daten:**\n\n* **Name, Geburtsdatum, Geschlecht**\n* **Adresse, Telefonnummer, E-Mail-Adresse**\n\n**Gesundheitliche Daten:**\n\n* **Medikamente, die aktuell eingenommen werden**\n* **Allergien und Unverträglichkeiten**\n* **Vorerkrankungen und Beschwerden**\n* **Familienanamnese (z.B. Herzkrankheiten, Diabetes)**\n\n**Lebensgewohnheiten:**\n\n* **Ernährung (z.B. Mahlzeiten, Essgewohnheiten, Allergien)**\n* **Aktivität (z.B. Sport, Bewegung, Rauchen, Alkohol)**\n* **Stressfaktoren und Schlafgewohnheiten**\n* **Rauchen, Alkohol und Drogenkonsum**\n\n**Weitere relevante Informationen:**\n\n* **Reisegewohnheiten und Aufenthalte**\n* **Beruf und Arbeits",
+      "sha": "8cb0184f0cf0650e",
+      "zeichen": 731,
+      "eval_count": 200,
+      "sekunden": 0.74
+    },
+    {
+      "name": "negativ-1",
+      "prompt": "Nenne drei Gruende, warum ein Laborwert falsch-positiv ausfallen kann. Als Liste.",
+      "antwort": "Hier sind drei Gründe, warum ein Laborwert falsch-positiv ausfallen kann:\n\n* **Verunreinigungen:**  Die Proben können durch Fremdstoffe oder -gerüche verunreinigt sein, die die Messung beeinflussen. \n* **Verfälschung der Analyse:**  Die Analysemethode selbst kann fehlerhaft sein, was zu falschen Ergebnissen führt. \n* **Interferenz:**  Andere Substanzen in der Probe können mit dem Messgerät interagieren und zu falschen Ergebnissen führen.",
+      "sha": "41e9120b8db71ae9",
+      "zeichen": 441,
+      "eval_count": 109,
+      "sekunden": 0.41
+    },
+    {
+      "name": "format-1",
+      "prompt": "Antworte ausschliesslich mit dem Wort: bereit",
+      "antwort": "bereit",
+      "sha": "7f2ffe9a165a20a2",
+      "zeichen": 6,
+      "eval_count": 4,
+      "sekunden": 0.02
+    },
+    {
+      "name": "laenge-1",
+      "prompt": "Beschreibe in genau drei Saetzen, wozu eine Verlaufsdokumentation dient.",
+      "antwort": "Hier sind drei Sätze, die beschreiben, was eine Verlaufsdokumentation dient:\n\n* **Eine Verlaufsdokumentation dient dazu, den Fortschritt und die Entwicklung eines Projekts oder einer Aufgabe zu dokumentieren.**  Sie bietet eine detaillierte Übersicht über die wichtigsten Schritte, Entscheidungen und Ergebnisse.\n* **Durch die detaillierte Dokumentation von Verlaufsdaten können Teams und Verantwortliche die Wirksamkeit ihrer Maßnahmen und die Effektivität von Entscheidungen überprüfen.**  Dies ermöglicht es, Probleme frühzeitig zu erkennen und zu beheben, sowie die Fortschritte und Ergebnisse zu bewerten.\n* **Eine Verlaufsdokumentation dient als Grundlage für zukünftige Entscheidungen und Analysen.**  Sie ermöglicht es, Trends und Muster zu erkennen, um zukünftige Projekte und Aufgaben besser zu planen und zu steuern.",
+      "sha": "92651521875e5de3",
+      "zeichen": 827,
+      "eval_count": 161,
+      "sekunden": 0.6
+    },
+    {
+      "name": "sprache-1",
+      "prompt": "Uebersetze den Begriff 'shortness of breath' ins Deutsche. Nur der Fachbegriff.",
+      "antwort": "**Schwindel** \n \n **Alternative:** \n \n **Atmungsschwierigkeiten** \n \n **Weitere Möglichkeiten:** \n \n **Schwindel** \n **Dyspnoe** \n \n **Hinweis:** \n \n Die beste Übersetzung hängt vom Kontext ab. \n \n **Beispiel:** \n \n \"The patient experienced shortness of breath during the exertion.\" \n \n **Übersetzung:** \n \n \"Der Patient erlebte Atemnot während der Belastung.\" \n \n **Alternative:** \n \n \"Der Patient erlebte Atembeschwerden während der Belastung.\" \n \n **Hinweis:** \n \n \"Schwindel\" ist der am häufigsten verwendete Fachbegriff für \"shortness of breath\". \n \n **Weitere Möglichkeiten:** \n \n \"Atemnot\" \n \"Atmungsschwierigkeiten\" \n \n **Hinweis:**",
+      "sha": "befbcf09a18d94e6",
+      "zeichen": 640,
+      "eval_count": 200,
+      "sekunden": 0.74
+    }
+  ]
+}

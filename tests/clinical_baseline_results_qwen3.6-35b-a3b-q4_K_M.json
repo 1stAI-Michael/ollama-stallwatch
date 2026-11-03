@@ -1,0 +1,128 @@
+{
+  "erstellt": "2026-11-03T13:45:33+0000",
+  "umgebung": {
+    "modell": "qwen3.6:35b-a3b-q4_K_M",
+    "optionen": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_predict": 200,
+      "top_k": 1,
+      "top_p": 1.0
+    },
+    "ollama_base": "http://127.0.0.1:11434",
+    "digest": "07d35212591fc27746f0a317c975a6d68754fb38e9053d82e25f06057af28522",
+    "groesse": 23938333577,
+    "geaendert": "2026-05-15T09:33:10.231148362Z",
+    "ollama_version": "0.40.6"
+  },
+  "eintraege": [
+    {
+      "name": "terminologie-1",
+      "prompt": "Erklaere den Unterschied zwischen Praevalenz und Inzidenz in zwei Saetzen.",
+      "antwort": "Die Prävalenz beschreibt die Gesamtzahl der bestehenden Erkrankungsfälle in einer Population zu einem bestimmten Zeitpunkt, während die Inzidenz die Anzahl der neu auftretenden Fälle innerhalb eines definierten Zeitraums angibt. Kurz gesagt misst die Prävalenz also den aktuellen \"Bestand\" an Krankheiten, die Inzidenz hingegen das \"Risiko\", eine Krankheit neu zu entwickeln.",
+      "sha": "489e0ddcc3841455",
+      "zeichen": 375,
+      "eval_count": 81,
+      "sekunden": 0.75
+    },
+    {
+      "name": "terminologie-2",
+      "prompt": "Was bedeutet die Abkuerzung CRP in der Labordiagnostik? Antworte in einem Satz.",
+      "antwort": "CRP steht für C-reaktives Protein, ein Akute-Phase-Protein, das als wichtiger Entzündungsmarker im Blut dient.",
+      "sha": "7f5fd0acee6fc1b9",
+      "zeichen": 110,
+      "eval_count": 31,
+      "sekunden": 0.36
+    },
+    {
+      "name": "struktur-1",
+      "prompt": "Gliedere einen Arztbrief in seine ueblichen Abschnitte. Nur die Ueberschriften, als Liste.",
+      "antwort": "*   Patientendaten / Kopfzeile\n*   Diagnosen\n*   Anamnese\n*   Klinischer Befund / Status\n*   Verlauf / Therapie\n*   Untersuchungsergebnisse (Labor, Bildgebung etc.)\n*   Beurteilung / Zusammenfassung\n*   Prognose\n*   Empfehlungen / Weiteres Vorgehen",
+      "sha": "d87d8e13549f518c",
+      "zeichen": 248,
+      "eval_count": 73,
+      "sekunden": 0.68
+    },
+    {
+      "name": "struktur-2",
+      "prompt": "Nenne die fuenf Vitalparameter, die bei einer Aufnahme routinemaessig erhoben werden. Nur die Liste.",
+      "antwort": "1. Blutdruck\n2. Pulsfrequenz\n3. Körpertemperatur\n4. Atemfrequenz\n5. Sauerstoffsättigung (pO₂)",
+      "sha": "e7c5fcd9ea027020",
+      "zeichen": 93,
+      "eval_count": 37,
+      "sekunden": 0.41
+    },
+    {
+      "name": "klassifikation-1",
+      "prompt": "Zu welchem ICD-10-Kapitel gehoeren Erkrankungen des Kreislaufsystems? Nenne Kapitel und Bereich.",
+      "antwort": "Erkrankungen des Kreislaufsystems gehören in der internationalen statistischen Klassifikation der Krankheiten und verwandter Gesundheitsprobleme (ICD-10) zum **Kapitel IX**.\n\n*   **Kapitel:** IX\n*   **Bereich/Bezeichnung:** Erkrankungen des Kreislaufsystems\n*   **Code-Bereich:** I00–I99\n\nDieses Kapitel umfasst unter anderem hypertensive Krankheiten, ischämische Herzkrankheiten, zerebrovaskuläre Erkrankungen und andere Gefäßerkrankungen.",
+      "sha": "8a0df85ff98313ba",
+      "zeichen": 440,
+      "eval_count": 112,
+      "sekunden": 0.98
+    },
+    {
+      "name": "dosis-1",
+      "prompt": "Erklaere, was 'BID' und 'TID' auf einem Medikationsplan bedeuten. Ein Satz je Abkuerzung.",
+      "antwort": "**BID** steht für die lateinische Abkürzung *bis in die* und bedeutet, dass ein Medikament zweimal täglich eingenommen werden muss.\n\n**TID** ist die Abkürzung für *ter in die*, was anweist, das Arzneimittel dreimal täglich zu nehmen.",
+      "sha": "9aab44b53bdb11d9",
+      "zeichen": 233,
+      "eval_count": 64,
+      "sekunden": 0.61
+    },
+    {
+      "name": "abgrenzung-1",
+      "prompt": "Worin unterscheiden sich Sensitivitaet und Spezifitaet eines Tests? Zwei Saetze.",
+      "antwort": "Die Sensitivität gibt an, wie wahrscheinlich ein Test bei tatsächlich Erkrankten positiv ausfällt, während die Spezifität angibt, wie wahrscheinlich er bei Gesunden negativ bleibt. Kurz gesagt misst die Sensitivität also die Trefferquote für Kranke und die Spezifität die Zuverlässigkeit der Negativbefunde bei Gesunden.",
+      "sha": "11c8b4a0f3697361",
+      "zeichen": 320,
+      "eval_count": 71,
+      "sekunden": 0.66
+    },
+    {
+      "name": "vignette-1",
+      "prompt": "Fasse zusammen, welche Angaben eine Anamnese mindestens enthalten soll. Als kurze Liste.",
+      "antwort": "Eine medizinische Mindest-Anamnese sollte folgende Punkte enthalten:\n\n*   **Aktuelle Beschwerden:** Art, Beginn, Dauer und Verlauf der Symptome.\n*   **Begleitumstände:** Auslöser, Verstärker oder Linderungsfaktoren.\n*   **Vorerkrankungen:** Bekannte chronische Krankheiten, frühere Operationen oder stationäre Aufenthalte.\n*   **Medikamente:** Aktuelle Einnahme (Rezept-, OTC-Medikamente, Nahrungsergänzungsmittel).\n*   **Allergien:** Unverträglichkeiten gegen Medikamente, Lebensmittel oder andere Stoffe.\n*   **Sozialanamnese:** Beruf, Wohnsituation, Rauch- und Alkoholkonsum sowie familiäre Belastung (familiäre Häufung von Krankheiten).",
+      "sha": "07aa0cbcbc13f35d",
+      "zeichen": 640,
+      "eval_count": 170,
+      "sekunden": 1.43
+    },
+    {
+      "name": "negativ-1",
+      "prompt": "Nenne drei Gruende, warum ein Laborwert falsch-positiv ausfallen kann. Als Liste.",
+      "antwort": "Hier sind drei häufige Gründe für falsch-positive Laborwerte:\n\n1. **Interferenzen durch Medikamente oder Nahrungsergänzungsmittel**: Bestimmte Substanzen (z. B. Vitamin C, Biotin oder diverse Arzneimittel) können chemisch mit den Reagenzien im Test reagieren und so ein fälschlicherweise hohes Signal erzeugen.\n2. **Probenfehler oder Kontamination**: Eine unsachgemäße Entnahme, Lagerung oder Handhabung der Probe (z. B. Hämolyse, Lipämie, Verwechslung von Probenröhrchen oder bakterielle Kontamination) kann die Messergebnisse verfälschen.\n3. **Biologische Variabilität oder Kreuzreaktivitäten**: Natürliche Schwankungen im Körper (z. B. durch Schwangerschaft, Alter oder akute Entzündungen) oder das Vorhandensein ähnlicher Strukturen im Blut (K",
+      "sha": "ca7ae35f5035431f",
+      "zeichen": 747,
+      "eval_count": 200,
+      "sekunden": 1.57
+    },
+    {
+      "name": "format-1",
+      "prompt": "Antworte ausschliesslich mit dem Wort: bereit",
+      "antwort": "bereit",
+      "sha": "7f2ffe9a165a20a2",
+      "zeichen": 6,
+      "eval_count": 2,
+      "sekunden": 0.08
+    },
+    {
+      "name": "laenge-1",
+      "prompt": "Beschreibe in genau drei Saetzen, wozu eine Verlaufsdokumentation dient.",
+      "antwort": "Eine Verlaufsdokumentation dient der lückenlosen und nachvollziehbaren Aufzeichnung von Behandlungs- oder Arbeitsprozessen über einen bestimmten Zeitraum. Sie ermöglicht es Fachkräften, den aktuellen Status präzise zu erfassen und auf dieser Grundlage fundierte Entscheidungen für die weitere Vorgehensweise zu treffen. Zudem sichert sie die rechtliche Absicherung und gewährleistet die Kontinuität der Versorgung oder Betreuung bei Personalwechseln oder Kontrollen.",
+      "sha": "933e05e0e60010f7",
+      "zeichen": 466,
+      "eval_count": 92,
+      "sekunden": 0.82
+    },
+    {
+      "name": "sprache-1",
+      "prompt": "Uebersetze den Begriff 'shortness of breath' ins Deutsche. Nur der Fachbegriff.",
+      "antwort": "Dyspnoe",
+      "sha": "b5c61f12520b17d3",
+      "zeichen": 7,
+      "eval_count": 6,
+      "sekunden": 0.16
+    }
+  ]
+}

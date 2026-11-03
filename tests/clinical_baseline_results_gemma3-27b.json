@@ -1,0 +1,128 @@
+{
+  "erstellt": "2026-11-03T13:24:08+0000",
+  "umgebung": {
+    "modell": "gemma3:27b",
+    "optionen": {
+      "temperature": 0.0,
+      "seed": 42,
+      "num_predict": 200,
+      "top_k": 1,
+      "top_p": 1.0
+    },
+    "ollama_base": "http://127.0.0.1:11434",
+    "digest": "a418f5838eaf7fe2cfe0a3046c8384b68ba43a4435542c942f9db00a5f342203",
+    "groesse": 17396936941,
+    "geaendert": "2026-02-24T14:44:01.062319291Z",
+    "ollama_version": "0.40.6"
+  },
+  "eintraege": [
+    {
+      "name": "terminologie-1",
+      "prompt": "Erklaere den Unterschied zwischen Praevalenz und Inzidenz in zwei Saetzen.",
+      "antwort": "Die **Prävalenz** bezieht sich auf den Anteil der Bevölkerung, der zu einem bestimmten Zeitpunkt an einer Krankheit leidet, während die **Inzidenz** die Rate neuer Fälle einer Krankheit innerhalb eines bestimmten Zeitraums misst. Kurz gesagt: Prävalenz ist ein \"Snapshot\", Inzidenz ist eine \"Rate\".",
+      "sha": "07306e4cd3438da6",
+      "zeichen": 298,
+      "eval_count": 71,
+      "sekunden": 7.27
+    },
+    {
+      "name": "terminologie-2",
+      "prompt": "Was bedeutet die Abkuerzung CRP in der Labordiagnostik? Antworte in einem Satz.",
+      "antwort": "CRP steht in der Labordiagnostik für C-reaktives Protein, einen Entzündungsmarker, dessen Konzentration im Blut bei Entzündungen oder Infektionen ansteigt.",
+      "sha": "9ab456f9e62de3de",
+      "zeichen": 155,
+      "eval_count": 44,
+      "sekunden": 4.62
+    },
+    {
+      "name": "struktur-1",
+      "prompt": "Gliedere einen Arztbrief in seine ueblichen Abschnitte. Nur die Ueberschriften, als Liste.",
+      "antwort": "Hier ist eine Liste der üblichen Abschnitte eines Arztbriefes:\n\n*   **Briefkopf** (mit Angaben zu Arzt/Praxis)\n*   **Empfänger** (Angaben zum überweisenden/behandelnden Arzt)\n*   **Datum**\n*   **Betreff** (z.B. Bericht über...)\n*   **Anrede**\n*   **Patientenbezogene Angaben** (Name, Geburtsdatum, ggf. Versichertennummer)\n*   **Einleitung/Anlass der Überweisung**\n*   **Anamnese**\n*   **Klinischer Befund**\n*   **Diagnose(n)**\n*   **Therapie** (bisherige und geplante)\n*   **Medikation**\n*   **Verlauf** (ggf. aktueller Status)\n*   **Empfehlungen/Weiterbehandlung**\n*   **Grußformel",
+      "sha": "e701677c61b7bd93",
+      "zeichen": 583,
+      "eval_count": 200,
+      "sekunden": 20.86
+    },
+    {
+      "name": "struktur-2",
+      "prompt": "Nenne die fuenf Vitalparameter, die bei einer Aufnahme routinemaessig erhoben werden. Nur die Liste.",
+      "antwort": "* Körpertemperatur\n* Pulsfrequenz\n* Atemfrequenz\n* Blutdruck\n* Sauerstoffsättigung",
+      "sha": "e5c809e6c5d1b690",
+      "zeichen": 82,
+      "eval_count": 25,
+      "sekunden": 2.68
+    },
+    {
+      "name": "klassifikation-1",
+      "prompt": "Zu welchem ICD-10-Kapitel gehoeren Erkrankungen des Kreislaufsystems? Nenne Kapitel und Bereich.",
+      "antwort": "Erkrankungen des Kreislaufsystems gehören zum **ICD-10-Kapitel I** (Krankheiten des Kreislaufsystems).\n\nDer Bereich umfasst die Codes **I00-I99**.\n\nHier eine grobe Unterteilung innerhalb dieses Kapitels:\n\n*   **I00-I02:** Einige spezifische akute Herzerkrankungen\n*   **I05-I09:** Chronische ischämische Herzerkrankung\n*   **I10-I15:** Hypertonie (Bluthochdruck)\n*   **I16-I19:** Andere Herzerkrankungen\n*   **I20-I25:** Ischämische Herzerkrankung\n*   **I26-I28:** Andere Formen der Herzerkrankung\n*   **I30-I50:** Erkrankungen des Kreislaufsystems (außer Herz",
+      "sha": "3de048da591f9e52",
+      "zeichen": 560,
+      "eval_count": 200,
+      "sekunden": 20.26
+    },
+    {
+      "name": "dosis-1",
+      "prompt": "Erklaere, was 'BID' und 'TID' auf einem Medikationsplan bedeuten. Ein Satz je Abkuerzung.",
+      "antwort": "Hier sind die Erklärungen für BID und TID auf einem Medikationsplan:\n\n*   **BID** steht für *bis in die*, was bedeutet, dass das Medikament zweimal täglich eingenommen werden soll.\n*   **TID** steht für *ter in die*, was bedeutet, dass das Medikament dreimal täglich eingenommen werden soll.",
+      "sha": "469b3a32a2e5cc57",
+      "zeichen": 291,
+      "eval_count": 75,
+      "sekunden": 7.63
+    },
+    {
+      "name": "abgrenzung-1",
+      "prompt": "Worin unterscheiden sich Sensitivitaet und Spezifitaet eines Tests? Zwei Saetze.",
+      "antwort": "Sensitivität misst die Fähigkeit eines Tests, tatsächlich positive Fälle korrekt zu identifizieren (die Wahrscheinlichkeit, dass ein positiver Patient auch positiv getestet wird). Spezifität misst die Fähigkeit eines Tests, tatsächlich negative Fälle korrekt zu identifizieren (die Wahrscheinlichkeit, dass ein negativer Patient auch negativ getestet wird).",
+      "sha": "61ae3f3303e793d0",
+      "zeichen": 357,
+      "eval_count": 73,
+      "sekunden": 7.48
+    },
+    {
+      "name": "vignette-1",
+      "prompt": "Fasse zusammen, welche Angaben eine Anamnese mindestens enthalten soll. Als kurze Liste.",
+      "antwort": "Eine vollständige Anamnese sollte mindestens folgende Angaben enthalten:\n\n*   **Patientendaten:** Name, Alter, Geschlecht, Beruf\n*   **Hauptbeschwerde:** Was ist das drängendste Problem?\n*   **Aktuelle Krankengeschichte:** Detaillierte Beschreibung der aktuellen Beschwerden (Beginn, Verlauf, Art, Auslöser, Begleitsymptome, Schmerzcharakteristik etc.)\n*   **Vorerkrankungen:** Alle bekannten Erkrankungen und Operationen\n*   **Medikation:** Aktuelle und kürzlich beendete Medikamente (inkl. Dosierung)\n*   **Allergien/Unverträglichkeiten:** Gegen welche Substanzen bestehen Allergien oder Unverträglichkeiten?\n*   **Familienanamnese:** Erkrankungen in der Familie, die für die aktuelle Situation relevant sein könnten\n*   **Sozialanamnese:** Lebensumstände, Beruf, Ernährung, Bewegung, Schlaf,",
+      "sha": "f0eca36a00434b49",
+      "zeichen": 794,
+      "eval_count": 200,
+      "sekunden": 20.84
+    },
+    {
+      "name": "negativ-1",
+      "prompt": "Nenne drei Gruende, warum ein Laborwert falsch-positiv ausfallen kann. Als Liste.",
+      "antwort": "Hier sind drei Gründe, warum ein Laborwert falsch-positiv ausfallen kann:\n\n1.  **Kreuzreaktion:** Das Testsystem kann auf eine Substanz reagieren, die der Zielsubstanz ähnlich ist. Dies führt dazu, dass das System fälschlicherweise ein positives Ergebnis anzeigt, obwohl die Zielsubstanz nicht vorhanden ist.\n2.  **Analytische Fehler:** Fehler im Testverfahren selbst, wie z. B. fehlerhafte Reagenzien, Geräte oder die Durchführung des Tests, können zu falschen Ergebnissen führen.\n3.  **Heterophile Antikörper:** Diese Antikörper können in der Probe vorhanden sein und mit den Reagenzien des Tests interferieren, was zu einem falsch-positiven Ergebnis führt. Sie sind nicht spezifisch für die Zielsubstanz, sondern binden an die Testkomponenten.",
+      "sha": "58a0c6b105bc88c9",
+      "zeichen": 746,
+      "eval_count": 182,
+      "sekunden": 19.02
+    },
+    {
+      "name": "format-1",
+      "prompt": "Antworte ausschliesslich mit dem Wort: bereit",
+      "antwort": "bereit",
+      "sha": "7f2ffe9a165a20a2",
+      "zeichen": 6,
+      "eval_count": 3,
+      "sekunden": 0.5
+    },
+    {
+      "name": "laenge-1",
+      "prompt": "Beschreibe in genau drei Saetzen, wozu eine Verlaufsdokumentation dient.",
+      "antwort": "Eine Verlaufsdokumentation dient dazu, alle Änderungen an einem System, Produkt oder Projekt systematisch festzuhalten. Sie ermöglicht die Nachvollziehbarkeit von Entscheidungen, Anpassungen und Problemlösungen im Zeitverlauf. Dadurch wird die Wartung vereinfacht, die Qualität verbessert und die Zusammenarbeit im Team effizienter gestaltet.",
+      "sha": "aa773f8524d472f7",
+      "zeichen": 342,
+      "eval_count": 72,
+      "sekunden": 7.34
+    },
+    {
+      "name": "sprache-1",
+      "prompt": "Uebersetze den Begriff 'shortness of breath' ins Deutsche. Nur der Fachbegriff.",
+      "antwort": "Dyspnoe.",
+      "sha": "e5f6adf919439470",
+      "zeichen": 8,
+      "eval_count": 6,
+      "sekunden": 0.84
+    }
+  ]
+}

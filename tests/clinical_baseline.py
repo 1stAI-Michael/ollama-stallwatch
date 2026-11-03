@@ -44,9 +44,43 @@ import time
 import urllib.request
 
 OLLAMA = os.environ.get("OLLAMA_BASE", "http://127.0.0.1:11434")
-MODELL = os.environ.get("BASELINE_MODEL", "alibayram/medgemma:27b")
-REFERENZ = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "clinical_baseline_results.json")
+
+# Das klinische Modell. Fuer dieses Modell heisst die Referenzdatei unveraendert
+# `clinical_baseline_results.json` — jeder bestehende Aufruf trifft genau dieselbe Datei
+# wie vorher.
+VORGABE_MODELL = "alibayram/medgemma:27b"
+MODELL = os.environ.get("BASELINE_MODEL", VORGABE_MODELL)
+
+
+def _dateiname(modell: str) -> str:
+    """Je Modell eine eigene Referenzdatei.
+
+    fA-1579, Michael 03.11.2026 (Auswahl im Terminal) auf die Frage, ob `wir testen mit
+    den Aerzten alles` auch gemma3:27b, qwen3.5:27b und qwen3.6:35b-a3b umfasst: `Ja, die
+    drei gehoeren dazu`. Sie haben denselben Motorwechsel mitgemacht wie medgemma
+    (0.19.0 fuhr sie ueber ollamas eigene Go-Engine), tragen aber mehr Verkehr —
+    qwen3.6 hatte in zwei Wochen 486 Rufe gegen 409 bei medgemma.
+
+    WARUM DAS EINE REPARATUR IST UND NICHT NUR EINE ERWEITERUNG: `BASELINE_MODEL` gab es
+    vorher schon, der Referenz-PFAD war aber fest. Wer das Modell umstellte und
+    `--anlegen` fuhr, hat die KLINISCHE Referenz mit den Antworten eines anderen Modells
+    ueberschrieben — ohne Fehler, ohne Warnung. `--vergleichen` haette den Modellnamen
+    danach zwar gemeldet, die alte Referenz war aber schon weg.
+    """
+    if modell == VORGABE_MODELL:
+        return "clinical_baseline_results.json"
+    kurz = modell.replace("/", "-").replace(":", "-")
+    return f"clinical_baseline_results_{kurz}.json"
+
+
+REFERENZ = os.environ.get("BASELINE_REFERENZ") or os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), _dateiname(MODELL))
+
+# Riegel gegen genau den Unfall, den `_dateiname` beschreibt: ein fremdes Modell darf die
+# klinische Referenzdatei nicht anfassen, auch nicht ueber BASELINE_REFERENZ.
+if MODELL != VORGABE_MODELL and os.path.basename(REFERENZ) == "clinical_baseline_results.json":
+    sys.exit(f"ABBRUCH: {MODELL} darf nicht in die klinische Referenz "
+             f"clinical_baseline_results.json schreiben.")
 
 # Feste Parameter. Jede Änderung hier entwertet die Referenz — dann neu anlegen.
 OPTIONEN = {"temperature": 0.0, "seed": 42, "num_predict": 200, "top_k": 1, "top_p": 1.0}
@@ -177,7 +211,8 @@ def rauschboden(n: int) -> int:
 
 # -------------------------------------------------------------------- Anlegen
 def anlegen() -> int:
-    print(f"### Referenz-Satz anlegen — {len(PROMPTS)} Prompts, {MODELL}\n")
+    print(f"### Referenz-Satz anlegen — {len(PROMPTS)} Prompts, {MODELL}")
+    print(f"    Referenz: {REFERENZ}\n")
     umf = umgebung()
     print(f"  Modell-Digest: {umf.get('digest', '?')[:20]}…  Ollama {umf.get('ollama_version', '?')}")
     warmlauf()
@@ -203,7 +238,8 @@ def vergleichen() -> int:
         print(f"Referenz fehlt: {REFERENZ} — erst --anlegen", file=sys.stderr)
         return 2
     alt = json.load(open(REFERENZ, encoding="utf-8"))
-    print(f"### Vergleich gegen Referenz vom {alt['erstellt']}\n")
+    print(f"### Vergleich gegen Referenz vom {alt['erstellt']}")
+    print(f"    Modell {MODELL}, Referenz {os.path.basename(REFERENZ)}\n")
 
     # Zuerst die Umgebung: ein anderer Digest erklaert jede Abweichung sofort.
     neu_umf, alt_umf = umgebung(), alt["umgebung"]

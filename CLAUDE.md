@@ -124,6 +124,26 @@ is fixed before measuring and a cold container no longer differs from a warm one
 is a real finding again; the earlier note "a red after a restart is known and harmless" no longer
 applies.
 
+**One reference per model.** `BASELINE_MODEL=<tag>` runs the same 12 prompts against another model
+and writes/reads `clinical_baseline_results_<tag>.json`; without the variable everything behaves
+exactly as before and uses `clinical_baseline_results.json`. The per-model filename is a **fix**,
+not a feature: the variable existed before while the reference path was fixed, so switching the
+model and running `--anlegen` silently overwrote the clinical reference. A foreign model can no
+longer write that file — it aborts, even via `BASELINE_REFERENZ`.
+
+Four reference sets exist, all created under 0.40.6 and each carrying its model digest:
+
+| Model | why it has one |
+|---|---|
+| `alibayram/medgemma:27b` | the clinical model (2026-10-20) |
+| `gemma3:27b`, `qwen3.5:27b`, `qwen3.6:35b-a3b-q4_K_M` | same engine change as medgemma, and more traffic — Michael 2026-11-03: "Ja, die drei gehören dazu" (fA-1579) |
+| `gemma2:2b` | the cheap canary: loads in seconds, so an engine change can be checked in ~2 min before the big models are touched |
+
+Only `gemma3:27b` and medgemma actually depend on the slot state — for `qwen3.5` and `qwen3.6` the
+stabilizing control case stays **green**, because cold and warm answers are identical there anyway.
+Their references are therefore backed by a different control: one signature bent in a copy of the
+reference must make `--vergleichen` report exactly that entry.
+
 ### Inside the Open WebUI Container
 
 ```bash
