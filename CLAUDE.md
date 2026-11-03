@@ -4,11 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Docker-based deployment of **Open WebUI** (v0.6.43) with **Ollama** (v0.19.0) as a local LLM inference backend, plus a CPU-based embedding/reranking fallback. The setup is designed for a multi-GPU NVIDIA host with GPU passthrough.
+This is a Docker-based deployment of **Open WebUI** (v0.6.43) with **Ollama** (v0.40.6) as a local LLM inference backend, plus a CPU-based reranking fallback. The setup is designed for a multi-GPU NVIDIA host with GPU passthrough.
+
+**Ollama moved from 0.19.0 to 0.40.6 on 2026-10-20** on Michael's release (fA-1579). This was not a
+version bump but an **engine change**: 0.19.0 ran `gemma3` (medgemma), `qwen35`, `qwen35moe` and
+`nomic-bert` on ollama's *own* Go engine, and from 0.30.0 that engine is gone — everything goes
+through llama-server. 5 of 12 clinical answers changed as a result, and **no parameter brings the
+old ones back**. The clinical reference set was re-created under 0.40.6; the rollback path and the
+per-architecture reasons are written out above the `image:` line in `docker-compose.yml`.
+Beware on the way back: `gpt-oss:20b` cannot be read by 0.40.x at all.
 
 - **Open WebUI**: Full-stack AI chat/RAG web application (Python/FastAPI backend + TypeScript/SvelteKit frontend)
 - **Ollama**: Local LLM inference engine with NVIDIA CUDA support
-- **tei-embed / tei-rerank**: Text Embeddings Inference on CPU (`bge-m3`, `bge-reranker-v2-m3`) — failover for GX-10
+- **tei-rerank**: Text Embeddings Inference on CPU (`bge-reranker-v2-m3`) — failover for GX-10
+- **tei-embed**: same image, `bge-m3` — **switched off 2026-10-20** (fA-1311/fA-1575: 0 requests in
+  30 days, endpoint disabled since 2026-10-13). Kept behind a compose profile, not deleted:
+  `docker compose --profile aus up -d tei-embed` brings it back. Port 8001 answers nothing today.
 - **rerank-adapter**: Translates OpenAI `/v1/rerank` to TEI `/rerank` so the coordinator sees one format
 - **Networking**: All containers communicate over a custom Docker bridge network (`openllm-net`)
 
@@ -25,7 +36,7 @@ from a LAN host is intended behaviour, not a fault. Measured 2026-09-13; re-meas
 | 11435 | ollama-logproxy | `0.0.0.0` | yes | `BIND_IP` in `.env` |
 | 3002 | monitoring dashboard/API | tailnet only | **no** | `[api] host` in `monitoring/config.toml` |
 | 3000 | openwebui | `0.0.0.0` | yes | `BIND_IP` + `OPENWEBUI_PORT` in `.env` |
-| 8001 | tei-embed | `0.0.0.0` | yes | `BIND_IP` in `.env` |
+| 8001 | tei-embed | — | **off since 2026-10-20** | `profiles: ["aus"]` in `docker-compose.yml` |
 | 8082 | rerank-adapter | `0.0.0.0` | yes | `BIND_IP` in `.env` |
 | — | tei-rerank | container network only | no | reached through rerank-adapter |
 
@@ -105,6 +116,13 @@ length.** Those change answers without failing, so nothing else catches them. Th
 part of the reference: the model is deterministic, but the answer depends on the slot's prefix
 cache — the same prompt repeated back-to-back reproducibly yields a *different* answer than the
 same prompt asked once. Do not re-run single entries in isolation.
+
+Since `9040b8b` the script runs **one unscored pass first** (`stabilisieren()`), so the slot state
+is fixed before measuring and a cold container no longer differs from a warm one. That costs
+100–110 s per check run. `PROBE_OHNE_STABILISIERUNG=1` switches it off, and then a cold
+`--vergleichen` **must** go red on `terminologie-1` — that is the control case. A red result there
+is a real finding again; the earlier note "a red after a restart is known and harmless" no longer
+applies.
 
 ### Inside the Open WebUI Container
 
