@@ -252,13 +252,63 @@ throughput to a single stream — identical throughput plus one request waiting 
 one slot. Related: the two models do not fit in VRAM together (31.4 + 16 GB > 40 GB usable), so
 loading one evicts the other; a cold load costs ~92 s.
 
-**Context limit: Ollama truncates silently.** Prompts beyond `OLLAMA_CONTEXT_LENGTH` do not
-produce an error — the server drops the front of the prompt, answers HTTP 200, and bills exactly
-131072 prompt tokens. Measured 2026-08-07 across 110%/150%/300% of the slot size, 9 of 9 runs
-(eval-gate P6, protocol in `/mnt/austausch/01_Agenten-Studio/eval-gate/messungen/`). Any client
-that needs a hard failure must check the context itself — including tool schemas, which the
-token count does not cover. The same applies one level down: both TEI containers run with
-`--auto-truncate`. Telltale sign in the monitoring DB: `prompt_tokens` stuck at exactly the slot size.
+**`mistral-nemo:12b` does not load at the server default at all** (fA-1834, measured
+2026-10-20, pre-existing on 0.19.0): a call without its own `num_ctx` dies with *"model
+requires more system memory (45.1 GiB) than is available (35.0 GiB)"* while 21.1 GiB sat free
+on the GPU — `131072 × 2 slots` as a sum. With `num_ctx=8192` it loads instantly. All 58 real
+calls in two weeks were HTTP 200, so the callers set their own context; it only bites whoever
+omits it. Dropping the page cache does **not** help (measured: 28 GiB free, still fails) —
+ollama counting available RAM as `MemFree + SwapFree` is real but is not the cause here.
+
+**Context limit: Ollama truncates silently — to HALF the context, not to the context.**
+Prompts beyond the context produce no error: the server throws away the front of the prompt,
+answers HTTP 200, and keeps roughly `n_keep + (num_ctx − n_keep)/2` tokens. Re-measured
+2026-11-04 on 0.40.6 (fA-1859), with `num_ctx` sent per request:
+
+| `num_ctx` sent | true input | `prompt_eval_count` | ratio |
+|---|---|---|---|
+| 2048 | 4635 | 1027 | 0.501 |
+| 4096 | 4635 | 2051 | 0.501 |
+| 8192 | 4635 | 4635 | fits, so nothing is cut |
+
+Same ratio for `gemma2:2b` and `phi3:3.8b`, so it is the server (one `llama-server` for every
+model since 0.40.6), not the model.
+
+**It is an edge, not a ceiling** (corrected by TI-NAS-07-QS3 on 2026-11-04 from this very
+table — the 8192 row proves it: 4635 tokens are *above* half of 8192 and were not cut):
+
+    input ≤ num_ctx    arrives unchanged
+    input > num_ctx    cut to n_keep + (num_ctx − n_keep)/2 — so you lose everything above
+                       roughly HALF, not just the overhang
+
+For `num_ctx=131072` that means 100k tokens arrive whole, while 140k tokens arrive as ≈ 65538:
+74k lost, not 9k. The failure is harmless below the edge and brutal just above it. Do not read
+this as "truncation starts at 65k".
+
+The earlier note here — "bills exactly 131072 prompt tokens", measured 2026-08-07 on 0.19.0
+(eval-gate P6) — no longer describes what happens either.
+
+**There is no usable marker.** `prompt_eval_count` only helps a caller who knows the true token
+count, and there is no tokenizer endpoint (`/api/tokenize` → 404 on 0.40.6). In the DEBUG log
+the line `slot … new prompt, n_ctx_slot = 2048, n_keep = 4, task.n_tokens = 1027` carries the
+*truncated* count, and `slot release: … truncated = 0` reads **0 even for a truncated
+request** — a field with the right name that stays 0 when it happened.
+
+**What does work: `truncate: false` in the request body** turns the silent cut into
+`HTTP 400 {"error":"request (4635 tokens) exceeds the available context size (2048 tokens), try
+increasing it"}`. The same request below the limit still answers 200, so the switch does not
+simply always reject. The error names the **true** token count regardless of `num_ctx`, which
+makes `num_ctx: 8, num_predict: 1, truncate: false` an exact tokenizer — per model, since the
+same text is 4635 tokens for `gemma2:2b` and 6515 for `phi3:3.8b`.
+
+**On the output side it is a silent context shift, not an abort.** Input 1198 tokens plus
+`num_predict: 2000` at `num_ctx: 2048` returns HTTP 200 with `eval_count: 2000` — 1150 tokens
+over the limit — and the log says `slot context shift, n_keep = 5, n_left = 2042,
+n_discard = 1021`. The `done_reason: 'length'` comes from `num_predict`, not from the context,
+so it is no marker either.
+
+One level down the same applies: both TEI containers run with `--auto-truncate`. Telltale sign
+in the monitoring DB: `prompt_tokens` stuck at exactly half the slot size.
 
 ## Monitoring
 
