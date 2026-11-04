@@ -258,7 +258,25 @@ def lauf(trocken=False):
         bericht["tabellen"][tabelle] = eintrag
 
     # Ereignisse: nie verdichten, nur sehr spaet loeschen.
-    for tabelle, spalte in (("ollama_requests", "timestamp"), ("stall_events", "start_ts")):
+    #
+    # fA-1833 (gemessen 03.11.2026): `proxy_requests` kam hier null mal vor und ist damit
+    # unbegrenzt gewachsen - die Tabelle wurde mit dem Logproxy angebaut (fA-338) und beim
+    # Aufraeumen vergessen. Sie traegt Zeitpunkt, Agentenkennung, Client-Adresse, Endpunkt,
+    # Modell und Tokenzahlen, KEINE Anfrageinhalte (mit Koedern ueber Erfolgs- und Fehlerpfad
+    # gemessen, fA-1485), gehoert also in dieselbe Klasse wie `ollama_requests` und bekommt
+    # dieselbe Frist.
+    #
+    # Nach VORHANDENSEIN gefiltert, nicht nach Namensliste: den Logproxy gibt es nicht auf
+    # jedem Host der Flotte, und ein DELETE auf eine fehlende Tabelle wuerde den ganzen
+    # Aufraeumlauf reissen - also genau die Wartung, die nie scheitern darf.
+    vorhanden = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table'")}
+    ereignis_tabellen = [(t, sp) for t, sp in (("ollama_requests", "timestamp"),
+                                               ("stall_events", "start_ts"),
+                                               ("proxy_requests", "timestamp"))
+                         if t in vorhanden]
+    bericht["ereignis_tabellen_gefunden"] = [t for t, _ in ereignis_tabellen]
+    for tabelle, spalte in ereignis_tabellen:
         c = schranke(conn, f"-{p['events_days']} days")
         if trocken:
             n = conn.execute(
