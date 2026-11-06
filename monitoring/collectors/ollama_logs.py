@@ -91,10 +91,18 @@ def main():
         return 0
 
     # Skip if container does not exist (portable across hosts without Ollama)
-    chk = subprocess.run(
-        ["docker", "inspect", "-f", "{{.State.Running}}", CONTAINER],
-        capture_output=True, text=True
-    )
+    # Zeitgrenze (fA-1923): haengt der docker-Daemon hier, kommt der Parser nie
+    # bis zum Folgen der Protokolle — die Unit bleibt "active" und der
+    # Anfrage-Chart bleibt leer, ohne dass etwas rot wird.
+    try:
+        chk = subprocess.run(
+            ["docker", "inspect", "-f", "{{.State.Running}}", CONTAINER],
+            capture_output=True, text=True, timeout=10
+        )
+    except subprocess.TimeoutExpired:
+        print("ollama_logs: docker inspect ueber 10s - Abbruch, Restart greift",
+              file=sys.stderr)
+        return 1
     if chk.returncode != 0:
         print(f"ollama_logs: container '{CONTAINER}' not present, exiting cleanly", file=sys.stderr)
         return 0

@@ -82,10 +82,22 @@ def query_nvidia_smi():
 
 
 def get_serve_pid():
-    r = subprocess.run(
-        ["docker", "inspect", "-f", "{{.State.Pid}}", CONTAINER],
-        capture_output=True, text=True
-    )
+    # Zeitgrenze (fA-1923): ohne sie wartet der Aufruf bei einem festhaengenden
+    # docker-Daemon unbegrenzt. Gemessen kostet das keine Zeilen — ohne PID
+    # entsteht ohnehin keine —, aber es kostet Sichtbarkeit: der Hänger sieht im
+    # Protokoll aus wie Ruhe, und `systemctl stop` wartet mit. Darum laut melden
+    # und den Zyklus verwerfen. KEIN stiller ValueError-Schutz an dieser Stelle:
+    # der aeussere Fehlerbehandler meldet eine unbrauchbare Ausgabe heute laut,
+    # ein Schutz haette daraus Stille gemacht (beides gemessen 05.11.2026).
+    try:
+        r = subprocess.run(
+            ["docker", "inspect", "-f", "{{.State.Pid}}", CONTAINER],
+            capture_output=True, text=True, timeout=10
+        )
+    except subprocess.TimeoutExpired:
+        print("stall detector: docker inspect ueber 10s - Probe verworfen",
+              file=sys.stderr)
+        return None
     if r.returncode != 0:
         return None
     try:

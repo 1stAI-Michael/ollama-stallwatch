@@ -194,6 +194,26 @@ nach jedem Durchgang eine Zeile nach `maintenance_log` (Zeitpunkt, Erfolg, Dauer
 gelöschte Zeilen je Tabelle) — **auch wenn er scheitert**. Ohne das wäre ein
 gescheiterter Lauf von einem nie gestarteten nicht zu unterscheiden.
 
+**Eine WAL-Datenbank kopiert man mit `VACUUM INTO`, nicht mit `cp`.** Im
+WAL-Modus steht der jüngste Stand im `-wal`-Beiblatt, nicht in der Hauptdatei.
+Wer nur `monitor.db` kopiert, bekommt eine Datei, die sich öffnen lässt und beim
+ersten Zugriff `no such table` sagt — gemessen von GX-10-Ops am 05.11.2026
+(fA-1922), als sie aus einer Kopie eine Probe fahren wollten. Richtig ist
+
+```bash
+sqlite3 monitoring/monitor.db "VACUUM INTO '/pfad/kopie.db'"
+# oder in Python: conn.execute("VACUUM INTO ?", (ziel,))
+```
+
+Die Sicherung in Abschnitt 4 nimmt deshalb `sqlite3.backup()` — dieselbe
+Eigenschaft, derselbe Grund. Die Falle ist, dass `cp` **nicht scheitert**: die
+Kopie kommt an, sie ist nur leer.
+
+**Eine gestellte Zeile muss die neueste sein.** Wer eine Probe mit einem
+künstlichen Datensatz füttert, der gegen `MAX(timestamp)` konkurriert, beweist
+nichts: eine 400 s alte gestellte Zeile neben echten jungen verliert und die
+Probe wird grün, obwohl nichts geprüft wurde (ebenfalls GX-10-Ops, 05.11.2026).
+
 **Jede stille Fehlerquelle bekommt eine Prüfung in `tests/stack_check.py`.**
 Derzeit drei:
 

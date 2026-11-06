@@ -21,10 +21,22 @@ PAGE_SIZE = os.sysconf(os.sysconf_names["SC_PAGE_SIZE"])
 
 def get_serve_pid():
     """Host PID of ollama serve (= the container's PID 1)."""
-    r = subprocess.run(
-        ["docker", "inspect", "-f", "{{.State.Pid}}", CONTAINER],
-        capture_output=True, text=True
-    )
+    # Zeitgrenze (fA-1923): ohne sie wartet der Aufruf bei einem festhaengenden
+    # docker-Daemon unbegrenzt. Gemessen kostet das keine Zeilen — ohne PID
+    # entsteht ohnehin keine —, aber es kostet Sichtbarkeit: der Hänger sieht im
+    # Protokoll aus wie Ruhe, und `systemctl stop` wartet mit. Darum laut melden
+    # und den Zyklus verwerfen. KEIN stiller ValueError-Schutz an dieser Stelle:
+    # der aeussere Fehlerbehandler meldet eine unbrauchbare Ausgabe heute laut,
+    # ein Schutz haette daraus Stille gemacht (beides gemessen 05.11.2026).
+    try:
+        r = subprocess.run(
+            ["docker", "inspect", "-f", "{{.State.Pid}}", CONTAINER],
+            capture_output=True, text=True, timeout=10
+        )
+    except subprocess.TimeoutExpired:
+        print("process collector: docker inspect ueber 10s - Zyklus verworfen",
+              file=sys.stderr)
+        return None
     if r.returncode != 0:
         return None
     pid = int(r.stdout.strip())

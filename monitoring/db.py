@@ -172,6 +172,14 @@ def init_schema(conn):
     conn.execute("CREATE INDEX IF NOT EXISTS idx_maint_ts ON maintenance_log(job, ts)")
 
     # Migration: add columns introduced after initial deploy
+    gpu_cols = {r[1] for r in conn.execute("PRAGMA table_info(gpu_metrics)").fetchall()}
+    if "mem_quelle" not in gpu_cols:
+        # Woher vram_used_mib/vram_total_mib in DIESER Zeile stammen:
+        # "query-gpu" (eigener Grafikspeicher) oder "compute-apps-summe+MemTotal"
+        # (Unified Memory, kein eigener VRAM — die Spaltennamen luegen dort).
+        # Uebernommen von GX-10-Ops, fA-1922/fA-1923: ein Umdeuten ist still,
+        # ein Umdeuten mit Herkunft in der Zeile ist es nicht mehr.
+        conn.execute("ALTER TABLE gpu_metrics ADD COLUMN mem_quelle TEXT")
     cols = {r[1] for r in conn.execute("PRAGMA table_info(stall_events)").fetchall()}
     if "confidence" not in cols:
         conn.execute("ALTER TABLE stall_events ADD COLUMN confidence TEXT")

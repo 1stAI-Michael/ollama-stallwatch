@@ -78,12 +78,16 @@ def query_system_metrics(conn, since):
                host_load1, host_mem_used_mib
         FROM system_metrics WHERE timestamp > ? ORDER BY timestamp
     """, (since,)).fetchall()
-    out = {"serve": {"ts": [], "cpu": [], "rss": [], "threads": []},
-           "runner": {"ts": [], "cpu": [], "rss": [], "threads": []},
-           "host": {"ts": [], "load": [], "mem": []}}
+    # Rollen NICHT fest verdrahten: hier sind es 'serve'/'runner', auf einem
+    # Host ohne Ollama die Endpunktnamen (GX-10-Ops, fA-1922). Eine feste Liste
+    # liess die Kurve dort leer, obwohl Zeilen da waren — ein Fehler, der wie
+    # "keine Last" aussieht. Das Gegenstueck steht im JS unten: es laeuft ueber
+    # die Schluessel von SYS, nicht ueber zwei Namen.
+    out = {"host": {"ts": [], "load": [], "mem": []}}
     seen_host = set()
     for ts, role, cpu, rss, nthr, load1, mem in rows:
-        if role in out:
+        if role != "host":
+            out.setdefault(role, {"ts": [], "cpu": [], "rss": [], "threads": []})
             out[role]["ts"].append(ts)
             out[role]["cpu"].append(cpu)
             out[role]["rss"].append(rss)
@@ -353,9 +357,9 @@ new Chart('tempChart', {{ type: 'line', data: {{ datasets: tempDs }},
 
 // System metrics
 const sysDs = [];
-['serve', 'runner'].forEach((role, i) => {{
+Object.keys(SYS).filter(r => r !== 'host').forEach((role, i) => {{
   const s = SYS[role];
-  if (!s.ts.length) return;
+  if (!s || !s.ts.length) return;
   sysDs.push({{ label: role + ' CPU%',
     data: s.ts.map((t, j) => ({{ x: t, y: s.cpu[j] }})),
     borderColor: COLORS[i], tension: 0.2, pointRadius: 0, yAxisID: 'y' }});
