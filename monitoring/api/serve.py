@@ -107,8 +107,50 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 int(hours)
             except ValueError:
                 hours = "24"
-            subprocess.run([sys.executable, str(DASHBOARD), hours],
-                           capture_output=True, timeout=15)
+            # fA-2077 (gefunden von ti11-Ops, 16.11.2026): hier stand ein nackter
+            # subprocess.run ohne Blick auf den returncode. Scheiterte die Erzeugung,
+            # lieferte der Datei-Handler darunter die ALTE dashboard.html mit HTTP 200
+            # aus — auf ti11 27 Tage lang dieselbe Seite vom 19.10.2026.
+            #
+            # Warum 503 und nicht die alte Seite mit Banderole: das Dashboard ist ein
+            # Diagnose-Werkzeug. Eine plausible Seite mit Daten von vorletzter Woche
+            # beantwortet „laeuft es?" mit einem Ja von vorletzter Woche — genau der
+            # Fall „eine Pruefung, die im Fehlerfall aussieht wie im Erfolgsfall".
+            # Eine Banderole haengt davon ab, dass jemand sie liest; 27 Tage sagen,
+            # dass das nicht passiert. Ein 503 kann stack_check.py pruefen.
+            # Die REST-Pfade lesen SQLite direkt und sind davon nicht betroffen.
+            #
+            # Form wie bei /api/gpu/live weiter unten: Zeitgrenze fangen, returncode
+            # pruefen, stderr sichtbar machen statt verschlucken.
+            #
+            # Die 15 s bleiben: gemessen 16.11.2026 braucht die Erzeugung 0,27 s (h=24)
+            # bzw. 0,10 s (h=168 und h=720) — das grosse Fenster ist nach der Retention
+            # sogar das billigere. 15 s sind also ~50-fache Luft, und eine haengende
+            # Erzeugung soll schnell ein 503 werden, nicht spaet.
+            try:
+                r = subprocess.run([sys.executable, str(DASHBOARD), hours],
+                                   capture_output=True, text=True, timeout=15)
+            except subprocess.TimeoutExpired:
+                print(f"dashboard: Erzeugung ueber 15 s (h={hours}) — 503, "
+                      f"alte Seite wird NICHT ausgeliefert", file=sys.stderr, flush=True)
+                return text_response(
+                    self,
+                    "Dashboard-Erzeugung ueberschritt 15 s.\n"
+                    "Die vorhandene alte Seite wird absichtlich NICHT ausgeliefert "
+                    "(fA-2077).\n", status=503)
+            if r.returncode != 0:
+                meldung = (r.stderr or "").strip()
+                print(f"dashboard: Erzeugung gescheitert (h={hours}, exit "
+                      f"{r.returncode}): {meldung or '<kein stderr>'}",
+                      file=sys.stderr, flush=True)
+                letzte = meldung.splitlines()[-1] if meldung else \
+                    f"Exit {r.returncode} ohne Meldung"
+                return text_response(
+                    self,
+                    f"Dashboard-Erzeugung gescheitert: {letzte}\n"
+                    "Die vorhandene alte Seite wird absichtlich NICHT ausgeliefert "
+                    "(fA-2077). Grund vollstaendig im Dienstprotokoll: "
+                    "journalctl -u ollama-dashboard -n 30\n", status=503)
             self.path = "/dashboard.html"
 
         return super().do_GET()

@@ -41,6 +41,7 @@ Betrieb. Die Datei bleibt als weicher Abgleich daneben stehen.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -163,6 +164,20 @@ def sh(*args: str, timeout: int = 30) -> tuple[int, str]:
 def hole(url: str, timeout: float = 10.0):
     with urllib.request.urlopen(url, timeout=timeout) as r:
         return json.loads(r.read().decode())
+
+
+def hole_roh(url: str, timeout: float = 10.0) -> tuple[bytes, int]:
+    """Rohe Bytes plus Status — auch bei 4xx/5xx, statt einer Ausnahme.
+
+    `hole` oben parst JSON und wirft bei jedem Fehlercode; fuer die HTML-Seite
+    brauchen wir aber den Koerper GENAU DANN, wenn der Code nicht 200 ist: dort
+    steht seit fA-2077 der Grund, warum die Erzeugung scheiterte.
+    """
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as r:
+            return r.read(), r.status
+    except urllib.error.HTTPError as e:
+        return e.read(), e.code
 
 
 def poste(url: str, body: dict, timeout: float = 900.0):
@@ -437,6 +452,36 @@ def check_monitoring() -> None:
                f"jüngste Zeile: {letzte}")
     except Exception as e:  # noqa: BLE001
         pruefe("Request-Log wird geschrieben", False, False, f"{type(e).__name__}: {e}")
+
+    # fA-2077 (gefunden von ti11-Ops): die HTML-Seite wird bei jedem Abruf neu
+    # erzeugt. Scheiterte das, lieferte serve.py bis 16.11.2026 die ALTE Datei mit
+    # HTTP 200 aus — auf ti11 27 Tage lang dieselbe Seite vom 19.10.2026. Der
+    # Fehlerfall ist seither ein 503; DIESE Pruefung ist der Grund, dass so ein
+    # Stillstand nicht wieder Wochen braucht, sondern beim naechsten Tageslauf
+    # auffaellt.
+    #
+    # Geprueft wird NICHT die mtime der Datei: eine alte mtime ist bei einem
+    # selten abgerufenen Dashboard der Normalzustand UND der Befund, beide sehen
+    # gleich aus (am 16.11. stand sie zehn Tage alt da und war voellig in Ordnung).
+    # Zwei Abrufe mit verschiedenem md5 sind der Unterschied, der nur entsteht,
+    # wenn wirklich erzeugt wird — die Seite traegt ihren Erzeugungszeitpunkt.
+    try:
+        a, code_a = hole_roh(DASHBOARD + "/?h=24", timeout=25)
+        time.sleep(1.2)
+        b, code_b = hole_roh(DASHBOARD + "/?h=24", timeout=25)
+        if code_a != 200 or code_b != 200:
+            grund = a.decode("utf-8", "replace").strip().splitlines()
+            pruefe("Dashboard-Seite wird erzeugt", True, False,
+                   f"HTTP {code_a}/{code_b} — {grund[0] if grund else 'ohne Grund'}")
+        else:
+            ha = hashlib.md5(a).hexdigest()
+            hb = hashlib.md5(b).hexdigest()
+            pruefe("Dashboard-Seite wird erzeugt", True, ha != hb,
+                   f"{len(a)} Byte, md5 {ha[:8]} / {hb[:8]}" if ha != hb else
+                   f"{len(a)} Byte, md5 {ha[:8]} ZWEIMAL — alte Datei, "
+                   f"Erzeugung steht (fA-2077)")
+    except Exception as e:  # noqa: BLE001
+        pruefe("Dashboard-Seite wird erzeugt", True, False, f"{type(e).__name__}: {e}")
 
 
 def check_aufraeumen() -> None:
