@@ -26,15 +26,15 @@ Beware on the way back: `gpt-oss:20b` cannot be read by 0.40.x at all.
 ## Who listens where
 
 Read this first when something is "suddenly unreachable". **Exactly one** service deliberately
-does not answer on the practice LAN: the monitoring dashboard. A refused connection to `:3002`
-from a LAN host is intended behaviour, not a fault. Measured 2026-09-13; re-measure with
-`sudo ss -tlnp` rather than trusting this table.
+does not answer on the practice LAN: the monitoring dashboard. From a LAN host other than
+`192.168.7.30` a dead `:3002` is intended behaviour, not a fault. Measured 2026-09-13, re-measured
+2026-11-25; re-measure with `sudo ss -tlnp` rather than trusting this table.
 
 | Port | Service | Bound to | LAN? | Set in |
 |---|---|---|---|---|
 | 11434 | ollama | `0.0.0.0` | yes | `BIND_IP` in `.env` |
 | 11435 | ollama-logproxy | `0.0.0.0` | yes | `BIND_IP` in `.env` |
-| 3002 | monitoring dashboard/API | tailnet only | **no** | `[api] host` in `monitoring/config.toml` |
+| 3002 | monitoring dashboard/API | tailnet **and** `192.168.7.130` | only from `.30`, only 2 paths | `[api] host` / `lan_*` in `monitoring/config.toml` |
 | 3000 | openwebui | `0.0.0.0` | yes | `BIND_IP` + `OPENWEBUI_PORT` in `.env` |
 | 8001 | tei-embed | — | **off since 2026-10-20** | `profiles: ["aus"]` in `docker-compose.yml` |
 | 8082 | rerank-adapter | `0.0.0.0` | yes | `BIND_IP` in `.env` |
@@ -57,18 +57,62 @@ Applying that rule to something new: ask whether it lets someone **read** someth
 does not otherwise expose. If yes, keep it on the tailnet. If it only re-exposes what `:11434`
 already offers, leave it with the others and do not pretend otherwise.
 
+**The rule applied, 2026-11-25 (fA-2224, Michael's release):** the OCR worker moving from TI-10
+to CT130 (`192.168.7.30`) reads the monitor to decide whether to abort a call and how to classify
+an error — without it, that stack writes different DB rows (it does not fail, it answers
+differently). CT130 has no tailnet and is not to get one. Resolved in fA-850's own terms — what is
+kept off the LAN is **disclosure, not capability** — so `:3002` now has a **second listener**:
+
+| | `100.121.5.76:3002` (tailnet) | `192.168.7.130:3002` (LAN) |
+|---|---|---|
+| sources | any | **only** `192.168.7.30` |
+| paths | everything | **only** `/api/gpu/live`, `/api/stalls` |
+
+The dashboard HTML, `/api/requests` (client addresses, models, a timeline), `/api/system` and the
+stack dumps stay tailnet-only. Residual disclosure, knowingly accepted: `/api/stalls` carries
+`client_ip` and `model`.
+
+Three decisions worth keeping:
+
+- **Not `0.0.0.0`.** `ThreadingHTTPServer` binds exactly one address, so the second address is a
+  second server in the same process — and `0.0.0.0` would have hung the port on the Docker
+  bridges too.
+- **Not a firewall rule.** This host has **no** filter rules of its own (`ufw inactive`, `INPUT
+  policy ACCEPT`, only the `ts-input` and `DOCKER` chains). A first `nft` rule would have needed
+  its own persistence machinery. The limit rides with the service, is configured in
+  `config.toml`, and is in git.
+- **The source check sits in `verify_request`,** before the handler: a non-allowed address gets
+  the connection closed with no request line read. The path check is an **exact** match, so
+  `/api/stalls` does not also open `/api/stalls/<id>/stack`.
+- **An empty allowlist does not mean "all".** With `lan_host` set but `lan_allow` or `lan_routes`
+  empty, the second listener does not start and says why. Without `lan_host` the service behaves
+  exactly as before, so other hosts of the fleet are unaffected.
+
+Prove it with `python3 tests/probe_lan_lauscher.py` (16 checks, no inference, does not touch the
+running service). Control switch: `PROBE_OHNE_BEGRENZUNG=1` runs the same cases against a plain
+`ThreadingHTTPServer`, and then the six cases named in the probe's header **must** go red —
+measured 2026-11-25: without the path list, `/api/stalls/1/stack` and `HEAD /serve.py` answer
+**200**, which is what the list is load-bearing for.
+
 **Symptom → cause:**
 
-- *Connection refused on `192.168.7.130:3002`* — intended. Use the tailnet address
-  (`100.121.5.76`).
-- *`127.0.0.1:3002` refused* — also intended: `ThreadingHTTPServer` binds exactly **one**
-  address, and that address is the tailnet one. `tests/stack_check.py` follows `[api] host`
-  instead of assuming localhost, so the check does not report a healthy service as dead.
+- *`192.168.7.130:3002` closes the connection without an answer* — intended, and it is the
+  **source** being rejected, not the port being shut: only `192.168.7.30` is allowed. Note the
+  difference from before — *connection refused* now means the listener is **not running**, while
+  a closed connection means it is running and rejected you. From ti-30 itself, and from the
+  containers, you get rejected too; that is the control case.
+- *`192.168.7.30` gets 404 on `/`, `/api/requests` or a stack dump* — intended, exact path list.
+  Only `/api/gpu/live` and `/api/stalls` are carried there; use the tailnet address for the rest.
+- *`127.0.0.1:3002` refused* — also intended: each `ThreadingHTTPServer` binds exactly **one**
+  address, and the two bound addresses are the tailnet and the LAN one. `tests/stack_check.py`
+  follows `[api] host` instead of assuming localhost, so the check does not report a healthy
+  service as dead.
 
 **To undo** (one line, no rebuild):
 
 ```bash
 # dashboard back onto the LAN: monitoring/config.toml -> [api] host = "0.0.0.0"
+# LAN listener off again: delete lan_host/lan_allow/lan_routes from [api]
 sudo systemctl restart ollama-dashboard
 ```
 
@@ -326,7 +370,8 @@ http://<server-ip>:3002/?h=720   # letzte 30 Tage
 
 Charts: GPU VRAM, GPU utilization %, temperature/power, requests/hour, model distribution, prompt tokens vs duration.
 **Reachable over Tailscale only** — `<server-ip>` above means the tailnet address, not the LAN
-one. The bind comes from `[api] host` in `monitoring/config.toml`, not from `BIND_IP`. See
+one. The LAN listener added in fA-2224 carries neither the dashboard nor these query parameters:
+it answers `/api/gpu/live` and `/api/stalls`, and only for `192.168.7.30`. The bind comes from `[api] host` in `monitoring/config.toml`, not from `BIND_IP`. See
 "Who listens where" below before concluding the dashboard is down.
 
 ### CLI Reports

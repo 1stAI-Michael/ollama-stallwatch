@@ -28,6 +28,26 @@ compose_file = "../docker-compose.yml"
 host = "0.0.0.0"
 port = 3002
 
+# Optional (fA-2224). Fehlen diese drei Schluessel, verhaelt sich der Dienst
+# genau wie vorher — ein Lauscher, die Adresse aus `host`. Sie sind fuer den
+# Fall da, dass EIN Nachbar im sonst ferngehaltenen Netz einen einzelnen
+# Endpunkt braucht, und nur dafuer.
+#
+#   lan_host   zweite Bindeadresse (konkret, nicht 0.0.0.0 — sonst haengt der
+#              Port auch an den Docker-Bruecken)
+#   lan_allow  Freigabeliste der QUELLEN; Einzeladresse oder CIDR. Geprueft in
+#              verify_request, also vor dem Handler: eine fremde Adresse
+#              bekommt die Verbindung zugemacht.
+#   lan_routes Freigabeliste der PFADE, EXAKTER Vergleich. "/api/stalls" gibt
+#              also nicht "/api/stalls/<id>/stack" mit frei.
+#
+# Ist `lan_host` gesetzt, aber eine der beiden Listen leer, startet der zweite
+# Lauscher NICHT und sagt warum. Eine leere Liste ist hier nie "alles".
+#
+# lan_host = "192.168.7.130"
+# lan_allow = ["192.168.7.30"]
+# lan_routes = ["/api/gpu/live", "/api/stalls"]
+
 [gpu]
 # 1 Hz is the fleet standard (STANDARD.md). At <=5s the collector runs ONE
 # long-lived `nvidia-smi --loop-ms` instead of spawning a process per sample —

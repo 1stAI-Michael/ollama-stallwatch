@@ -46,6 +46,7 @@ import json
 import os
 import re
 import shutil
+import socket
 import sqlite3
 import subprocess
 import sys
@@ -482,6 +483,52 @@ def check_monitoring() -> None:
                    f"Erzeugung steht (fA-2077)")
     except Exception as e:  # noqa: BLE001
         pruefe("Dashboard-Seite wird erzeugt", True, False, f"{type(e).__name__}: {e}")
+
+    # fA-2224: der zweite Lauscher im LAN ist eng begrenzt (nur CT130, nur zwei
+    # Pfade). Eine Begrenzung, die niemand nachmisst, weicht still auf — und von
+    # aussen sieht ein offener Port genauso freundlich aus wie ein begrenzter.
+    #
+    # DIESER Host ist nicht freigegeben, also ist die Pruefung ein Kontrollfall
+    # mit bekannter Antwort. Entscheidend sind DREI unterscheidbare Ausgaenge,
+    # nicht zwei — sonst faellt die Pruefung in die Falle "der Lauf fand gar
+    # nicht statt":
+    #
+    #   connect scheitert   -> der Lauscher ist WEG (lan_allow leer? Startfehler?)
+    #                          Das ist ein Fehler, kein Erfolg: ohne Lauscher
+    #                          verliert CT130 den Monitor und der OCR-Stack
+    #                          schreibt wieder andere Zeilen.
+    #   connect ok, Byte da -> die Freigabe ist AUFGEWEICHT (lan_allow erweitert,
+    #                          0.0.0.0 gebunden oder lan_routes leer)
+    #   connect ok, zu      -> richtig: Lauscher laeuft, fremde Quelle abgewiesen
+    #
+    # Die volle Mechanik prueft tests/probe_lan_lauscher.py, inklusive
+    # Kontrollschalter; hier steht nur die Abdrift-Wache fuer den Tageslauf.
+    _api = CFG.get("api", {})
+    lan_host = _api.get("lan_host")
+    if lan_host:
+        lan_port = _api.get("port", 3002)
+        detail = (f"Freigabe {_api.get('lan_allow')}, "
+                  f"Pfade {_api.get('lan_routes')}")
+        try:
+            verb = socket.create_connection((lan_host, lan_port), timeout=5)
+        except Exception as e:  # noqa: BLE001
+            pruefe(f"LAN-Lauscher {lan_host}:{lan_port} laeuft", True, False,
+                   f"{type(e).__name__} — kein Lauscher, CT130 erreicht den "
+                   f"Monitor nicht ({detail})")
+        else:
+            try:
+                verb.sendall(b"GET /api/gpu/live HTTP/1.0\r\n\r\n")
+                antwort = verb.recv(64)
+            except Exception as e:  # noqa: BLE001
+                antwort, fehler = b"", f"{type(e).__name__}"
+            else:
+                fehler = ""
+            finally:
+                verb.close()
+            pruefe(f"LAN-Lauscher weist diesen Host ab", True, antwort == b"",
+                   (f"Verbindung wird zugemacht ({detail})" if antwort == b""
+                    else f"ANTWORTET: {antwort[:24]!r} — Begrenzung aufgeweicht "
+                         f"({detail})") + (f" [{fehler}]" if fehler else ""))
 
 
 def check_aufraeumen() -> None:

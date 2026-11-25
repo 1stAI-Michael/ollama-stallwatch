@@ -2,10 +2,12 @@
 """HTTP server: dashboard pages + read-only REST API for cross-host correlation."""
 
 import http.server
+import ipaddress
 import json
 import shutil
 import subprocess
 import sys
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
@@ -15,6 +17,21 @@ from db import CONFIG, connect
 
 PORT = CONFIG["api"]["port"]
 HOST = CONFIG["api"]["host"]
+
+# fA-2224 (Michael, 25.11.2026): optionaler ZWEITER Lauscher im LAN, eng begrenzt.
+# Fehlt `lan_host`, verhaelt sich der Dienst exakt wie vorher — andere Hosts der
+# Flotte (ti11 u. a.) bleiben davon unberuehrt, ohne ihre config.toml zu aendern.
+#
+# Warum ein zweiter Lauscher und nicht 0.0.0.0: ThreadingHTTPServer bindet genau
+# EINE Adresse, und 0.0.0.0 haette den Port auch an die Docker-Bruecken gehaengt.
+# Warum im Dienst und nicht in der Firewall: ti-30 hat keine eigene Filterregel
+# (ufw inactive, INPUT policy ACCEPT), nur die ts-input- und DOCKER-Ketten. Eine
+# erste nft-Regel braeuchte eigene Persistenz-Mechanik; diese Begrenzung faehrt
+# mit dem Dienst und steht in git.
+_API = CONFIG.get("api", {})
+LAN_HOST = _API.get("lan_host") or ""
+LAN_ALLOW = _API.get("lan_allow") or []
+LAN_ROUTES = tuple(_API.get("lan_routes") or ())
 DIR = Path(__file__).parent
 DASHBOARD = DIR / "dashboard.py"
 HTML = DIR / "dashboard.html"
@@ -41,6 +58,38 @@ def text_response(handler, text, status=200):
     handler.wfile.write(body)
 
 
+def netze_aus(eintraege):
+    """Freigabeliste -> Netzobjekte. Einzeladresse und CIDR sind beide erlaubt."""
+    return tuple(ipaddress.ip_network(str(e).strip(), strict=False)
+                 for e in eintraege)
+
+
+class BegrenzterServer(http.server.ThreadingHTTPServer):
+    """Lauscher mit Quell- UND Pfadbegrenzung (fA-2224).
+
+    Die Quellpruefung sitzt in `verify_request`, also VOR dem Handler: eine
+    nicht freigegebene Adresse bekommt die Verbindung zugemacht, es wird keine
+    Anfragezeile gelesen und kein Handler gebaut. Das ist naeher an einer
+    Firewall als eine Pruefung in do_GET, die erst nach dem Parsen greift.
+
+    Die Pfadbegrenzung prueft der Handler ueber `self.server.routen` — EXAKTER
+    Vergleich, kein Praefix: `/api/stalls` ist frei, `/api/stalls/<id>/stack`
+    deshalb nicht mit.
+    """
+
+    def __init__(self, adresse, handler, netze, routen):
+        self.netze = tuple(netze)
+        self.routen = tuple(routen)
+        super().__init__(adresse, handler)
+
+    def verify_request(self, request, client_address):
+        try:
+            ip = ipaddress.ip_address(client_address[0])
+        except ValueError:
+            return False
+        return any(ip in n for n in self.netze)
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(DIR), **kwargs)
@@ -49,7 +98,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # quiet stdlib access logs; systemd already logs starts/stops
         pass
 
+    def _route_gesperrt(self):
+        """True (und 404 ist raus), wenn dieser Lauscher den Pfad nicht fuehrt.
+
+        Greift nur auf einem Lauscher MIT `routen`; der Tailnet-Lauscher hat
+        keine und fuehrt wie bisher alles. Die Pruefung steht vor do_GET UND
+        do_HEAD: der Datei-Handler unter dem Dashboard wuerde sonst per HEAD
+        die Dateien in monitoring/api/ ausliefern.
+        """
+        routen = getattr(self.server, "routen", ())
+        if not routen:
+            return False
+        if urlparse(self.path).path in routen:
+            return False
+        text_response(self, "not found\n", status=404)
+        return True
+
+    def do_HEAD(self):
+        if self._route_gesperrt():
+            return
+        return super().do_HEAD()
+
     def do_GET(self):
+        if self._route_gesperrt():
+            return
         url = urlparse(self.path)
         path = url.path
         qs = parse_qs(url.query)
@@ -358,6 +430,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                            "host_load1": r[6], "host_mem_used_mib": r[7]} for r in rows]}
 
 
+def lan_lauscher():
+    """Zweiter Lauscher oder None. Faellt LAUT aus, nie still offen (fA-2224)."""
+    if not LAN_HOST:
+        return None
+    if not LAN_ALLOW or not LAN_ROUTES:
+        print("FEHLER: [api] lan_host ist gesetzt, aber lan_allow oder lan_routes "
+              "ist leer. Der LAN-Lauscher bleibt AUS — eine leere Freigabeliste "
+              "waere ein offener Port, und das ist nicht der Default dieses "
+              "Dienstes (fA-2224).", file=sys.stderr, flush=True)
+        return None
+    srv = BegrenzterServer((LAN_HOST, PORT), Handler,
+                           netze_aus(LAN_ALLOW), LAN_ROUTES)
+    print(f"LAN-Lauscher auf http://{LAN_HOST}:{PORT} — "
+          f"nur Quellen {list(LAN_ALLOW)}, nur Pfade {list(LAN_ROUTES)}",
+          file=sys.stderr)
+    return srv
+
+
 def main():
     server = http.server.ThreadingHTTPServer((HOST, PORT), Handler)
     print(f"dashboard+api on http://{HOST}:{PORT}", file=sys.stderr)
@@ -369,10 +459,17 @@ def main():
     print(f"  /api/system    process+host metrics (?since=)", file=sys.stderr)
     print(f"  /api/gpu/live  fresh nvidia-smi snapshot (always current)", file=sys.stderr)
     print(f"  /api/gpu/series  gpu_metrics time series (?since=, ?gpu_id=)", file=sys.stderr)
+    lan = lan_lauscher()
+    if lan is not None:
+        threading.Thread(target=lan.serve_forever, daemon=True,
+                         name="lan-lauscher").start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
+    if lan is not None:
+        lan.shutdown()
+        lan.server_close()
     server.server_close()
 
 
