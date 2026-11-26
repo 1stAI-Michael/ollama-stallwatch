@@ -201,8 +201,28 @@ gesehen hat. Richtig ist
 
 ```bash
 sqlite3 monitoring/monitor.db "VACUUM INTO '/pfad/kopie.db'"
-# oder in Python: conn.execute("VACUUM INTO ?", (ziel,))
 ```
+
+⚠️ **Auf ti-30 gibt es dieses Kommando nicht** (gemessen 26.11.2026: Paket `sqlite3` nicht
+installiert, `command -v sqlite3` leer; nur das Python-Modul ist da, 3.45.1). Die Zeile oben
+laeuft dort also nicht — `command not found`, Exit 127. Wer sie aus diesem Standard abschreibt
+und den Exit-Code nicht ansieht, hat am Ende **keine Kopie** und keine Fehlermeldung, die ihm das
+sagt. Der Weg, der ueberall geht, weil jede Python-Installation das Modul mitbringt:
+
+```python
+import sqlite3
+quelle = sqlite3.connect("file:monitoring/monitor.db?mode=ro", uri=True)
+quelle.execute("VACUUM INTO ?", ("/pfad/kopie.db",))
+quelle.close()
+```
+
+Beides gemessen, nicht abgeschrieben: der Schnipsel laeuft woertlich (eine `mode=ro`-Verbindung
+darf `VACUUM INTO` fahren), und das **Ziel darf nicht existieren** — Gegenprobe mit vorhandener
+Datei endet in `OperationalError: output file already exists`. Ein Wiederholungslauf, der die
+alte Kopie nicht vorher wegnimmt, scheitert also sichtbar und schreibt nicht halb.
+
+Ob das Kommando auf den anderen Maschinen liegt, sagt jede fuer sich (fA-2197) — hier steht nur,
+was auf ti-30 gemessen ist.
 
 Die Sicherung in Abschnitt 4 nimmt deshalb `sqlite3.backup()` — dieselbe
 Eigenschaft, derselbe Grund.
