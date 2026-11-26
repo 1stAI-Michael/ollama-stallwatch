@@ -41,7 +41,6 @@ Betrieb. Die Datei bleibt als weicher Abgleich daneben stehen.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import re
@@ -461,26 +460,46 @@ def check_monitoring() -> None:
     # Stillstand nicht wieder Wochen braucht, sondern beim naechsten Tageslauf
     # auffaellt.
     #
-    # Geprueft wird NICHT die mtime der Datei: eine alte mtime ist bei einem
-    # selten abgerufenen Dashboard der Normalzustand UND der Befund, beide sehen
-    # gleich aus (am 16.11. stand sie zehn Tage alt da und war voellig in Ordnung).
-    # Zwei Abrufe mit verschiedenem md5 sind der Unterschied, der nur entsteht,
-    # wenn wirklich erzeugt wird — die Seite traegt ihren Erzeugungszeitpunkt.
+    # Geprueft wird NICHT die mtime der Datei: eine alte mtime ist bei einem selten
+    # abgerufenen Dashboard der Normalzustand UND der Befund, beide sehen gleich aus.
+    #
+    # Und auch NICHT mehr der Vergleich zweier md5 — das war die erste Fassung und
+    # sie meldete falsch ROT (ti11-Ops, 26.11.2026). `dashboard.py` schreibt den
+    # Erzeugungszeitpunkt MINUTENGENAU; faellt auf einem ruhigen Host kein neuer
+    # Messwert in die Sekunde zwischen zwei Abrufen, sind zwei KORREKT erzeugte
+    # Seiten bytegleich. Auf ti-30 fiel es nicht auf, weil hier jede Sekunde eine
+    # GPU-Zeile dazukommt — der Kontrollfall konnte den Fehler also gar nicht
+    # finden. Eine Pruefung, die bei Ruhe rot wird, erzieht zum Wegsehen.
+    #
+    # Gemessen wird jetzt die Aussage selbst statt einer Nebenwirkung: die Seite
+    # TRAEGT ihren Erzeugungszeitpunkt. Ein Abruf genuegt, Last spielt keine Rolle,
+    # und die alte Seite ist eindeutig rot, weil sie den alten Zeitpunkt traegt.
+    #
+    # Fehlt der Marker, ist das ROT und nicht gruen: sonst schaltet eine Aenderung
+    # am Seitenkopf diese Pruefung lautlos ab. Toleranz 3 min, weil der Stempel
+    # minutengenau ist (bis 59 s Scheinalter) und ein Minutenwechsel dazukommt —
+    # gesucht sind Wochen, nicht Minuten.
     try:
-        a, code_a = hole_roh(DASHBOARD + "/?h=24", timeout=25)
-        time.sleep(1.2)
-        b, code_b = hole_roh(DASHBOARD + "/?h=24", timeout=25)
-        if code_a != 200 or code_b != 200:
-            grund = a.decode("utf-8", "replace").strip().splitlines()
+        seite, code = hole_roh(DASHBOARD + "/?h=24", timeout=25)
+        text = seite.decode("utf-8", "replace")
+        if code != 200:
+            zeilen = text.strip().splitlines()
             pruefe("Dashboard-Seite wird erzeugt", True, False,
-                   f"HTTP {code_a}/{code_b} — {grund[0] if grund else 'ohne Grund'}")
+                   f"HTTP {code} — {zeilen[0] if zeilen else 'ohne Grund'}")
         else:
-            ha = hashlib.md5(a).hexdigest()
-            hb = hashlib.md5(b).hexdigest()
-            pruefe("Dashboard-Seite wird erzeugt", True, ha != hb,
-                   f"{len(a)} Byte, md5 {ha[:8]} / {hb[:8]}" if ha != hb else
-                   f"{len(a)} Byte, md5 {ha[:8]} ZWEIMAL — alte Datei, "
-                   f"Erzeugung steht (fA-2077)")
+            m = re.search(r"Erzeugt:\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2}) UTC", text)
+            if not m:
+                pruefe("Dashboard-Seite wird erzeugt", True, False,
+                       f"{len(seite)} Byte, aber kein 'Erzeugt:'-Marker — "
+                       f"Seitenkopf geaendert? Pruefung waere sonst blind (fA-2077)")
+            else:
+                stand = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M").replace(
+                    tzinfo=timezone.utc)
+                alter_min = (datetime.now(timezone.utc) - stand).total_seconds() / 60
+                pruefe("Dashboard-Seite wird erzeugt", True, alter_min <= 3,
+                       f"{len(seite)} Byte, erzeugt {m.group(1)} UTC "
+                       f"({alter_min:.1f} min alt)"
+                       + ("" if alter_min <= 3 else " — ALTE Seite, Erzeugung steht"))
     except Exception as e:  # noqa: BLE001
         pruefe("Dashboard-Seite wird erzeugt", True, False, f"{type(e).__name__}: {e}")
 
