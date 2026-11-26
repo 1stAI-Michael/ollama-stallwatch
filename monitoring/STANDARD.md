@@ -196,9 +196,8 @@ gescheiterter Lauf von einem nie gestarteten nicht zu unterscheiden.
 
 **Eine WAL-Datenbank kopiert man mit `VACUUM INTO`, nicht mit `cp`.** Im
 WAL-Modus steht der jüngste Stand im `-wal`-Beiblatt, nicht in der Hauptdatei.
-Wer nur `monitor.db` kopiert, bekommt eine Datei, die sich öffnen lässt und beim
-ersten Zugriff `no such table` sagt — gemessen von GX-10-Ops am 05.11.2026
-(fA-1922), als sie aus einer Kopie eine Probe fahren wollten. Richtig ist
+Wer nur `monitor.db` kopiert, bekommt deshalb nicht den Stand, den er gerade
+gesehen hat. Richtig ist
 
 ```bash
 sqlite3 monitoring/monitor.db "VACUUM INTO '/pfad/kopie.db'"
@@ -206,8 +205,30 @@ sqlite3 monitoring/monitor.db "VACUUM INTO '/pfad/kopie.db'"
 ```
 
 Die Sicherung in Abschnitt 4 nimmt deshalb `sqlite3.backup()` — dieselbe
-Eigenschaft, derselbe Grund. Die Falle ist, dass `cp` **nicht scheitert**: die
-Kopie kommt an, sie ist nur leer.
+Eigenschaft, derselbe Grund.
+
+**Wie der Fehlschlag aussieht, hängt vom Checkpoint-Stand ab — und der harmlos
+aussehende Fall ist der schlimmere.** Hier standen zwei Messungen gegeneinander,
+beide echt:
+
+| gemessen | Ergebnis des `cp` |
+|---|---|
+| GX-10-Ops, 05.11.2026 (fA-1922) | öffnet sich, erster Zugriff sagt `no such table` |
+| ti-30, 26.11.2026 (beim Bau des Wiederherstell-Stands auf `/srv/sicherung`) | öffnet sich, **liest sich normal**, 58.373 statt 58.607 Zeilen |
+
+Es ist kein Widerspruch, sondern dieselbe Ursache in zwei Zuständen: was noch
+nicht in die Hauptdatei geschrieben ist, fehlt der Kopie. Ist seit dem Anlegen
+nie ein Checkpoint gelaufen, fehlt das Schema selbst — dann kommt `no such
+table`. Ist es gelaufen, fehlen nur die Zeilen seither — dann **fehlt nichts
+Sichtbares**. Auf ti-30 war das `-wal`-Beiblatt mit 137 MB größer als die 136 MB
+Hauptdatei; die Kopie wirkte vollständig und war 234 Zeilen alt.
+
+Die Falle ist deshalb nicht, dass die Kopie leer ist — die Falle ist, dass `cp`
+**nicht scheitert**. Eine stille, lesbare, veraltete Kopie bemerkt niemand, und
+wer sie misst und das Ergebnis als Zustand meldet, hat eine zweite Wahrheit
+erzeugt. Der frühere Satz an dieser Stelle — „die Kopie kommt an, sie ist nur
+leer" — beschrieb nur den Zustand, in dem GX-10 gemessen hat, und hätte den
+anderen als Entlastung lesbar gemacht.
 
 **Eine gestellte Zeile muss die neueste sein.** Wer eine Probe mit einem
 künstlichen Datensatz füttert, der gegen `MAX(timestamp)` konkurriert, beweist
